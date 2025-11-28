@@ -1,6 +1,6 @@
 # Logr
 
-This is a monorepo containing the different parts of an API logging app called Leaf.
+This is a monorepo containing the different parts of an API logging app called Logr.
 
 ## Why?
 
