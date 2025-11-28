@@ -1,0 +1,31 @@
+{
+  "name": "@repo/db",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas/*": "./src/schemas/*.ts",
+    "./validators/*": "./src/validators/*.ts"
+  },
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:delete": "docker compose down -v",
+    "db:psql": "docker exec -it logr-pg psql -U user -d logr",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.7",
+    "drizzle-zod": "^0.8.3",
+    "pg": "^8.16.3",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.3",
+    "@types/pg": "^8.15.6",
+    "drizzle-kit": "^0.31.7"
+  }
+}

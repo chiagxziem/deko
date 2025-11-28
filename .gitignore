@@ -9,9 +9,8 @@ node_modules
 .env*
 !.env.example
 
-# Coverage
+# Testing
 coverage
-*.lcov
 
 # Turbo
 .turbo
@@ -29,7 +28,6 @@ build
 dist
 dist-ssr
 generated
-*.tgz
 
 # JetBrains
 .idea
@@ -41,15 +39,9 @@ generated
 .DS_Store
 *.pem
 
-# caches
-.eslintcache
-.cache
+# typescript
 *.tsbuildinfo
+next-env.d.ts
 
 # wrangler
 .wrangler
-
-# logs
-logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
