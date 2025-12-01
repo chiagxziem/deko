@@ -1,11 +1,23 @@
 import type { AppRouteHandler } from "@/lib/types";
 import {
   createProjectForUser,
+  createProjectTokenForUser,
   getProjectsForUser,
+  getSingleProjectForUser,
+  getSingleProjectTokenForUser,
+  updateProjectTokenForUser,
 } from "@/queries/project-queries";
-import { successResponse } from "@/utils/api-response";
+import { errorResponse, successResponse } from "@/utils/api-response";
+import { decrypt, encrypt } from "@/utils/encryption";
 import HttpStatusCodes from "@/utils/http-status-codes";
-import type { CreateProjectRoute, GetProjectsRoute } from "./projects.routes";
+import { stripHyphens } from "@/utils/string";
+import type {
+  CreateProjectRoute,
+  CreateProjectTokenRoute,
+  GetProjectRoute,
+  GetProjectsRoute,
+  UpdateProjectTokenRoute,
+} from "./projects.routes";
 
 export const getProjects: AppRouteHandler<GetProjectsRoute> = async (c) => {
   const user = c.get("user");
@@ -27,5 +39,155 @@ export const createProject: AppRouteHandler<CreateProjectRoute> = async (c) => {
   return c.json(
     successResponse(newProject, "Project created successfully"),
     HttpStatusCodes.CREATED,
+  );
+};
+
+export const getProject: AppRouteHandler<GetProjectRoute> = async (c) => {
+  const user = c.get("user");
+  const { id: projectId } = c.req.valid("param");
+
+  const project = await getSingleProjectForUser(projectId, user.id);
+
+  if (!project) {
+    return c.json(
+      errorResponse("NOT_FOUND", "Project not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  // Decrypt encrypted project tokens
+  const projectTokens = project.tokens.map((pt) => {
+    const { encryptedToken, ...token } = pt;
+
+    return {
+      ...token,
+      token: decrypt(encryptedToken),
+    };
+  });
+
+  const projectWithDecryptedTokens = {
+    ...project,
+    tokens: projectTokens,
+  };
+
+  return c.json(
+    successResponse(
+      projectWithDecryptedTokens,
+      "Project retrieved successfully",
+    ),
+    HttpStatusCodes.OK,
+  );
+};
+
+export const createProjectToken: AppRouteHandler<
+  CreateProjectTokenRoute
+> = async (c) => {
+  const user = c.get("user");
+  const { id: projectId } = c.req.valid("param");
+  const { name } = c.req.valid("json");
+
+  const project = await getSingleProjectForUser(projectId, user.id);
+
+  if (!project) {
+    return c.json(
+      errorResponse("NOT_FOUND", "Project not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  // Generate random project token string
+  const projectTokenStr = stripHyphens(crypto.randomUUID());
+  const encryptedProjectTokenStr = encrypt(projectTokenStr);
+
+  // Create new project token
+  const { encryptedToken: _et, ...newProjectToken } =
+    await createProjectTokenForUser({
+      name,
+      encryptedToken: encryptedProjectTokenStr,
+      projectId,
+    });
+
+  const newDecryptedProjectToken = {
+    ...newProjectToken,
+    token: projectTokenStr,
+  };
+
+  return c.json(
+    successResponse(
+      newDecryptedProjectToken,
+      "Project token created successfully",
+    ),
+    HttpStatusCodes.CREATED,
+  );
+};
+
+export const updateProjectToken: AppRouteHandler<
+  UpdateProjectTokenRoute
+> = async (c) => {
+  const user = c.get("user");
+  const { projectId, tokenId } = c.req.valid("param");
+  const { name } = c.req.valid("json");
+
+  // Get project
+  const project = await getSingleProjectForUser(projectId, user.id);
+
+  if (!project) {
+    return c.json(
+      errorResponse("NOT_FOUND", "Project not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  // Get token
+  const encryptedProjectToken = await getSingleProjectTokenForUser(
+    tokenId,
+    projectId,
+  );
+
+  if (!encryptedProjectToken) {
+    return c.json(
+      errorResponse("TOKEN_NOT_FOUND", "Token not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  // Decrypt token str
+  const { encryptedToken, ...newProjectToken } = encryptedProjectToken;
+
+  const decryptedProjectToken = {
+    ...newProjectToken,
+    token: decrypt(encryptedToken),
+  };
+
+  // Return success if the name didn't change
+  if (name === decryptedProjectToken.name) {
+    return c.json(
+      successResponse(
+        decryptedProjectToken,
+        "Project token updated successfully",
+      ),
+      HttpStatusCodes.OK,
+    );
+  }
+
+  // Update name
+  const { encryptedToken: updatedEncryptedToken, ...updatedProjectToken } =
+    await updateProjectTokenForUser({
+      tokenId,
+      name,
+    });
+
+  // Decrypt token str of updated project token
+  const updatedDecryptedProjectToken = {
+    ...updatedProjectToken,
+    token: decrypt(updatedEncryptedToken),
+  };
+
+  return c.json(
+    successResponse(
+      updatedDecryptedProjectToken,
+      "Project token updated successfully",
+    ),
+    HttpStatusCodes.OK,
   );
 };

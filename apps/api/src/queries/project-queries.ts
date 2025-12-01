@@ -1,5 +1,5 @@
-import { db } from "@repo/db";
-import { project } from "@repo/db/schemas/project.schema";
+import { db, eq } from "@repo/db";
+import { project, projectToken } from "@repo/db/schemas/project.schema";
 import slugify from "slugify";
 
 /**
@@ -50,4 +50,82 @@ export const createProjectForUser = async (name: string, userId: string) => {
     .returning();
 
   return newProject;
+};
+
+/**
+ * Get a single project for a user
+ * @param projectId - The ID of the project
+ * @param userId - The ID of the user
+ * @returns The project with its tokens
+ */
+export const getSingleProjectForUser = async (
+  projectId: string,
+  userId: string,
+) => {
+  const singleProject = await db.query.project.findFirst({
+    where: (project, { eq, and }) =>
+      and(eq(project.userId, userId), eq(project.id, projectId)),
+    with: {
+      tokens: true,
+    },
+  });
+
+  return singleProject;
+};
+
+export const createProjectTokenForUser = async ({
+  encryptedToken,
+  name,
+  projectId,
+}: {
+  encryptedToken: string;
+  name: string;
+  projectId: string;
+}) => {
+  const [newProjectToken] = await db
+    .insert(projectToken)
+    .values({
+      name,
+      encryptedToken,
+      projectId,
+    })
+    .returning();
+
+  return newProjectToken;
+};
+
+/**
+ * Get a single project token for a user
+ * @param projectId - The ID of the project
+ * @param userId - The ID of the user
+ * @returns The project token
+ */
+export const getSingleProjectTokenForUser = async (
+  tokenId: string,
+  projectId: string,
+) => {
+  const singleProjectToken = await db.query.projectToken.findFirst({
+    where: (projectToken, { eq, and }) =>
+      and(eq(projectToken.projectId, projectId), eq(projectToken.id, tokenId)),
+  });
+
+  return singleProjectToken;
+};
+
+export const updateProjectTokenForUser = async ({
+  name,
+  tokenId,
+}: {
+  name: string;
+  tokenId: string;
+}) => {
+  const [updatedProjectToken] = await db
+    .update(projectToken)
+    .set({
+      name,
+    })
+    .where(eq(projectToken.id, tokenId))
+    .returning();
+
+  return updatedProjectToken;
 };

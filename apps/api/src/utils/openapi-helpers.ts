@@ -31,18 +31,26 @@ export const validationErrorHandler: Hook<any, any, any, any> = (result, c) => {
 /**
  * Helper function to create a UUID parameter schema for OpenAPI path parameters.
  */
-export const createIdUUIDParamsSchema = (description: string, name = "id") => {
+export const createIdUUIDParamsSchema = <K extends string>(
+  idParams: Record<K, string>,
+) => {
   return z.object({
-    [name]: z.uuid().openapi({
-      param: {
-        name: name,
-        in: "path",
-        required: true,
+    ...Object.entries(idParams).reduce(
+      (acc, [key, value]) => {
+        acc[key as K] = z.uuid().openapi({
+          param: {
+            name: key,
+            in: "path",
+            required: true,
+          },
+          required: [key],
+          example: "123e4567-e89b-12d3-a456-426614174000",
+          description: value as string,
+        });
+        return acc;
       },
-      required: [name],
-      example: "123e4567-e89b-12d3-a456-426614174000",
-      description,
-    }),
+      {} as Record<K, z.ZodType<string>>,
+    ),
   });
 };
 
