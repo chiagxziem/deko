@@ -1,0 +1,1 @@
+ALTER TABLE "project_token" ALTER COLUMN "name" SET NOT NULL;

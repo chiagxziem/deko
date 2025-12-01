@@ -1,0 +1,1 @@
+ALTER TABLE "project_token" DROP COLUMN "revoked_at";

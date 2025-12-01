@@ -41,15 +41,14 @@ export const projectToken = pgTable(
     projectId: uuid("project_id")
       .references(() => project.id)
       .notNull(),
-    hashedToken: text("hashed_token").notNull().unique(),
-    name: text("name"),
+    encryptedToken: text("encrypted_token").notNull().unique(),
+    name: text("name").notNull(),
     lastUsedAt: timestamp("last_used_at"),
-    revokedAt: timestamp("revoked_at"),
     ...timestamps,
   },
   (table) => [
     index("project_token_projectId_idx").on(table.projectId),
-    uniqueIndex("project_token_hashedToken_idx").on(table.hashedToken),
+    uniqueIndex("project_token_encryptedToken_idx").on(table.encryptedToken),
   ],
 );
 export const projectTokenRelations = relations(projectToken, ({ one }) => ({

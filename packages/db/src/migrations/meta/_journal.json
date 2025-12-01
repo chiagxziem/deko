@@ -50,6 +50,27 @@
       "when": 1764539912622,
       "tag": "0006_marvelous_stephen_strange",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1764544734926,
+      "tag": "0007_great_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764544976780,
+      "tag": "0008_stormy_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1764547964951,
+      "tag": "0009_loud_lester",
+      "breakpoints": true
     }
   ]
 }
