@@ -2,16 +2,13 @@ import { enqueueLogEvent } from "@/lib/queue";
 import type { AppRouteHandler } from "@/lib/types";
 import { getProjectByToken } from "@/queries/project-queries";
 import { errorResponse, successResponse } from "@/utils/api-response";
-import { encrypt } from "@/utils/encryption";
 import HttpStatusCodes from "@/utils/http-status-codes";
 import type { IngestLogRoute } from "./logs.routes";
 
 export const ingestLog: AppRouteHandler<IngestLogRoute> = async (c) => {
   const log = c.req.valid("json");
 
-  const encryptedToken = encrypt(log.projectToken);
-
-  const project = await getProjectByToken(encryptedToken);
+  const project = await getProjectByToken(log.projectToken);
 
   if (!project) {
     return c.json(

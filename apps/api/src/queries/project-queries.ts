@@ -1,6 +1,8 @@
-import { db, eq } from "@repo/db";
+import { and, db, eq } from "@repo/db";
 import { project, projectToken } from "@repo/db/schemas/project.schema";
 import slugify from "slugify";
+
+import { encrypt } from "@/utils/encryption";
 
 /**
  * Get all projects for a user
@@ -15,9 +17,17 @@ export const getProjectsForUser = async (userId: string) => {
   return projects;
 };
 
+/**
+ * Get a project by its token
+ * @param token - The token of the project
+ * @returns The project with its tokens
+ */
 export const getProjectByToken = async (token: string) => {
+  const encryptedToken = encrypt(token);
+
   const projectToken = await db.query.projectToken.findFirst({
-    where: (projectToken, { eq }) => eq(projectToken.encryptedToken, token),
+    where: (projectToken, { eq }) =>
+      eq(projectToken.encryptedToken, encryptedToken),
     with: {
       project: true,
     },
@@ -84,6 +94,12 @@ export const getSingleProjectForUser = async (
   return singleProject;
 };
 
+/**
+ * Update a project for a user
+ * @param name - Name of the project
+ * @param projectId - The ID of the project
+ * @returns The updated project with its tokens
+ */
 export const updateProjectForUser = async ({
   name,
   projectId,
@@ -111,6 +127,31 @@ export const updateProjectForUser = async ({
   });
 
   return updatedProjectWithTokens;
+};
+
+/**
+ * Delete a project for a user
+ * @param projectId - The ID of the project
+ * @param userId - The ID of the user
+ * @returns The deleted project
+ */
+export const deleteProjectForUser = async ({
+  projectId,
+  userId,
+}: {
+  projectId: string;
+  userId: string;
+}) => {
+  const [deletedProject] = await db
+    .delete(project)
+    .where(and(eq(project.id, projectId), eq(project.userId, userId)))
+    .returning();
+
+  if (!deletedProject) {
+    return undefined;
+  }
+
+  return deletedProject;
 };
 
 /**
@@ -175,4 +216,31 @@ export const updateProjectTokenForUser = async ({
     .returning();
 
   return updatedProjectToken;
+};
+
+/**
+ * Delete a project token for a user
+ * @param projectId - The ID of the project
+ * @param tokenId - The ID of the token
+ * @returns The deleted project token
+ */
+export const deleteProjectTokenForUser = async ({
+  projectId,
+  tokenId,
+}: {
+  projectId: string;
+  tokenId: string;
+}) => {
+  const [deletedProjectToken] = await db
+    .delete(projectToken)
+    .where(
+      and(eq(projectToken.id, tokenId), eq(projectToken.projectId, projectId)),
+    )
+    .returning();
+
+  if (!deletedProjectToken) {
+    return undefined;
+  }
+
+  return deletedProjectToken;
 };

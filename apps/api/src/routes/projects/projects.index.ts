@@ -12,6 +12,7 @@ projectsRouter
   .openapi(projectsRoutes.getProjects, projectsHandlers.getProjects)
   .openapi(projectsRoutes.getProject, projectsHandlers.getProject)
   .openapi(projectsRoutes.updateProject, projectsHandlers.updateProject)
+  .openapi(projectsRoutes.deleteProject, projectsHandlers.deleteProject)
   .openapi(
     projectsRoutes.createProjectToken,
     projectsHandlers.createProjectToken,
@@ -19,6 +20,10 @@ projectsRouter
   .openapi(
     projectsRoutes.updateProjectToken,
     projectsHandlers.updateProjectToken,
+  )
+  .openapi(
+    projectsRoutes.deleteProjectToken,
+    projectsHandlers.deleteProjectToken,
   );
 
 export default projectsRouter;

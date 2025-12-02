@@ -2,6 +2,8 @@ import type { AppRouteHandler } from "@/lib/types";
 import {
   createProjectForUser,
   createProjectTokenForUser,
+  deleteProjectForUser,
+  deleteProjectTokenForUser,
   getProjectsForUser,
   getSingleProjectForUser,
   getSingleProjectTokenForUser,
@@ -15,6 +17,8 @@ import { stripHyphens } from "@/utils/string";
 import type {
   CreateProjectRoute,
   CreateProjectTokenRoute,
+  DeleteProjectRoute,
+  DeleteProjectTokenRoute,
   GetProjectRoute,
   GetProjectsRoute,
   UpdateProjectRoute,
@@ -159,6 +163,38 @@ export const updateProject: AppRouteHandler<UpdateProjectRoute> = async (c) => {
   );
 };
 
+export const deleteProject: AppRouteHandler<DeleteProjectRoute> = async (c) => {
+  const user = c.get("user");
+  const { id: projectId } = c.req.valid("param");
+
+  // Get project
+  const project = await getSingleProjectForUser(projectId, user.id);
+
+  if (!project) {
+    return c.json(
+      errorResponse("NOT_FOUND", "Project not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  const deletedProject = await deleteProjectForUser({
+    projectId,
+    userId: user.id,
+  });
+
+  if (!deletedProject) {
+    return c.json(
+      errorResponse("NOT_FOUND", "Project not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  return c.json(
+    successResponse({ status: "ok" }, "Project deleted successfully"),
+    HttpStatusCodes.OK,
+  );
+};
+
 export const createProjectToken: AppRouteHandler<
   CreateProjectTokenRoute
 > = async (c) => {
@@ -267,6 +303,56 @@ export const updateProjectToken: AppRouteHandler<
     successResponse(
       updatedDecryptedProjectToken,
       "Project token updated successfully",
+    ),
+    HttpStatusCodes.OK,
+  );
+};
+
+export const deleteProjectToken: AppRouteHandler<
+  DeleteProjectTokenRoute
+> = async (c) => {
+  const user = c.get("user");
+  const { projectId, tokenId } = c.req.valid("param");
+
+  // Get project
+  const project = await getSingleProjectForUser(projectId, user.id);
+
+  if (!project) {
+    return c.json(
+      errorResponse("PROJECT_NOT_FOUND", "Project not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  // Get token
+  const projectToken = await getSingleProjectTokenForUser(tokenId, projectId);
+
+  if (!projectToken) {
+    return c.json(
+      errorResponse("TOKEN_NOT_FOUND", "Token not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  // Delete project token
+  const deletedProjectToken = await deleteProjectTokenForUser({
+    projectId,
+    tokenId,
+  });
+
+  if (!deletedProjectToken) {
+    return c.json(
+      errorResponse("TOKEN_NOT_FOUND", "Token not found"),
+      HttpStatusCodes.NOT_FOUND,
+    );
+  }
+
+  return c.json(
+    successResponse(
+      {
+        status: "ok",
+      },
+      "Project token deleted successfully",
     ),
     HttpStatusCodes.OK,
   );

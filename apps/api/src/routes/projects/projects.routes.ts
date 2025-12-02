@@ -219,6 +219,68 @@ export const updateProject = createRoute({
   },
 });
 
+export const deleteProject = createRoute({
+  path: "/projects/{id}",
+  method: "delete",
+  tags,
+  description: "Delete a project",
+  request: {
+    params: createIdUUIDParamsSchema({
+      id: "Project ID",
+    }),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: successContent({
+      description: "Project deleted",
+      schema: z.object({
+        status: z.string().default("ok"),
+      }),
+      resObj: {
+        details: "Project deleted successfully",
+        data: {
+          status: "ok",
+        },
+      },
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: errorContent({
+      description: "Invalid request data",
+      examples: {
+        invalidProjectID: {
+          summary: "Invalid project ID",
+          code: "INVALID_DATA",
+          details: getErrDetailsFromErrFields({
+            projectId: "Invalid UUID",
+          }),
+          fields: {
+            projectId: "Invalid UUID",
+          },
+        },
+      },
+    }),
+    [HttpStatusCodes.UNAUTHORIZED]: genericErrorContent(
+      "UNAUTHORIZED",
+      "Unauthorized",
+      "No session found",
+    ),
+    [HttpStatusCodes.NOT_FOUND]: errorContent({
+      description: "Project not found",
+      examples: {
+        projectNotFound: {
+          summary: "Project not found",
+          code: "NOT_FOUND",
+          details: "Project not found",
+        },
+      },
+    }),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: genericErrorContent(
+      "TOO_MANY_REQUESTS",
+      "Too many requests",
+      "Too many requests have been made. Please try again later.",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: serverErrorContent(),
+  },
+});
+
 export const createProjectToken = createRoute({
   path: "/projects/{id}/tokens",
   method: "post",
@@ -374,9 +436,91 @@ export const updateProjectToken = createRoute({
   },
 });
 
+export const deleteProjectToken = createRoute({
+  path: "/projects/{projectId}/tokens/{tokenId}",
+  method: "delete",
+  tags,
+  description: "Delete a project token",
+  request: {
+    params: createIdUUIDParamsSchema({
+      projectId: "Project ID",
+      tokenId: "Token ID",
+    }),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: successContent({
+      description: "Project token deleted",
+      schema: z.object({
+        status: z.string().default("ok"),
+      }),
+      resObj: {
+        details: "Project token deleted successfully",
+        data: {
+          status: "ok",
+        },
+      },
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: errorContent({
+      description: "Invalid request data",
+      examples: {
+        invalidProjectID: {
+          summary: "Invalid project ID",
+          code: "INVALID_DATA",
+          details: getErrDetailsFromErrFields({
+            projectId: "Invalid UUID",
+          }),
+          fields: {
+            projectId: "Invalid UUID",
+          },
+        },
+        invalidTokenID: {
+          summary: "Invalid Token ID",
+          code: "INVALID_DATA",
+          details: getErrDetailsFromErrFields({
+            tokenId: "Invalid UUID",
+          }),
+          fields: {
+            tokenId: "Invalid UUID",
+          },
+        },
+      },
+    }),
+    [HttpStatusCodes.UNAUTHORIZED]: genericErrorContent(
+      "UNAUTHORIZED",
+      "Unauthorized",
+      "No session found",
+    ),
+    [HttpStatusCodes.NOT_FOUND]: errorContent({
+      description: "Project or token not found",
+      examples: {
+        projectNotFound: {
+          summary: "Project not found",
+          code: "PROJECT_NOT_FOUND",
+          details: "Project not found",
+        },
+        tokenNotFound: {
+          summary: "Token not found",
+          code: "TOKEN_NOT_FOUND",
+          details: "Token not found",
+        },
+      },
+    }),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: genericErrorContent(
+      "TOO_MANY_REQUESTS",
+      "Too many requests",
+      "Too many requests have been made. Please try again later.",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: serverErrorContent(),
+  },
+});
+
+// TODO: Add delete project token route
+
 export type GetProjectsRoute = typeof getProjects;
 export type CreateProjectRoute = typeof createProject;
 export type GetProjectRoute = typeof getProject;
 export type UpdateProjectRoute = typeof updateProject;
+export type DeleteProjectRoute = typeof deleteProject;
 export type CreateProjectTokenRoute = typeof createProjectToken;
 export type UpdateProjectTokenRoute = typeof updateProjectToken;
+export type DeleteProjectTokenRoute = typeof deleteProjectToken;
