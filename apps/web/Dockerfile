@@ -1,6 +1,6 @@
 FROM oven/bun:1.3.3 AS base
 
-# --- Prepare stage ---
+# --- PREPARE STAGE ---
 FROM base AS prepare
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY . .
 # Generate a partial monorepo with a pruned lockfile for a target workspace.
 RUN turbo prune web --docker
 
-# --- Builder stage ---
+# --- BUILDER STAGE ---
 FROM base AS builder
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY --from=prepare /app/out/full/ .
 # Build the app
 RUN bunx turbo run build
 
-# --- Runner stage ---
+# --- RUNNER STAGE ---
 FROM base AS runner
 WORKDIR /app
 
