@@ -37,14 +37,6 @@ WORKDIR /app
 ENV NODE_ENV=production \
     HOSTNAME="0.0.0.0"
 
-# Copy only the necessary files from the builder stage
-# COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder /app/package.json ./package.json
-# COPY --from=builder /app/packages ./packages
-# COPY --from=builder /app/apps/worker/node_modules ./apps/worker/node_modules
-# COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
-# COPY --from=builder /app/apps/worker/package.json ./apps/worker/package.json
-
 COPY --from=builder /app/apps/worker/logr-worker ./logr-worker
 
 USER bun
