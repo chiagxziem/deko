@@ -10,10 +10,10 @@ import {
   successContent,
 } from "@/utils/openapi-helpers";
 
-const tags = ["Logs"];
+const tags = ["Ingest"];
 
 export const ingestLog = createRoute({
-  path: "/logs",
+  path: "/ingest",
   method: "post",
   tags,
   description: "Ingest log",
