@@ -66,6 +66,18 @@ input[type="number"] {
   display: none; /* For Chrome, Safari, and Opera */
 }
 
+/* The toast is not wide enough on large screens, so we need to set a larger width for medium and large screens */
+@media (min-width: 601px) and (max-width: 768px) {
+  .large-width {
+    width: 20rem !important;
+  }
+}
+@media (min-width: 769px) {
+  .large-width {
+    width: 25rem !important;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

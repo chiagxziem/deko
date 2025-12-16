@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { inter, jetbrains } from "@/styles/fonts";
 import "@/styles/globals.css";
@@ -16,11 +17,13 @@ const RootLayout = ({
   children: ReactNode;
 }>) => {
   return (
-    <html className="" lang="en">
+    <html className="dark" lang="en">
       <body className={cn(jetbrains.variable, inter.variable)}>
         <div className="relative isolate min-h-svh bg-background font-inter text-foreground antialiased">
           {children}
         </div>
+
+        <Toaster />
       </body>
     </html>
   );
