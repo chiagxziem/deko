@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile logr-api-exe"
+    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile api-exe"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.1.5",

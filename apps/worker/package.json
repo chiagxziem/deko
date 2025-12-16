@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile logr-worker-exe"
+    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile worker-exe"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.10",

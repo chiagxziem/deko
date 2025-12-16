@@ -37,8 +37,8 @@ WORKDIR /app
 ENV NODE_ENV=production \
     HOSTNAME="0.0.0.0"
 
-COPY --from=builder /app/apps/worker/logr-worker ./logr-worker
+COPY --from=builder /app/apps/worker/worker-exe ./worker-exe
 
 USER bun
 
-ENTRYPOINT [ "./logr-worker" ]
+ENTRYPOINT [ "./worker-exe" ]

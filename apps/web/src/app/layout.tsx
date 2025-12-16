@@ -16,7 +16,7 @@ const RootLayout = ({
   children: ReactNode;
 }>) => {
   return (
-    <html className="dark" lang="en">
+    <html className="" lang="en">
       <body className={cn(jetbrains.variable, inter.variable)}>
         <div className="relative isolate min-h-svh bg-background font-inter text-foreground antialiased">
           {children}
