@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { Button } from "@/components/ui/button";
+import { OauthSignInLink } from "@/components/auth/oauth";
 
 const GuestPage = () => {
   return (
@@ -11,14 +9,7 @@ const GuestPage = () => {
         view, and analyze your API requests and responses in real time.
       </p>
 
-      <Button
-        className={"px-0"}
-        nativeButton={false}
-        render={<Link href={"/sign-in"} />}
-        variant="link"
-      >
-        Sign in to continue
-      </Button>
+      <OauthSignInLink />
     </main>
   );
 };

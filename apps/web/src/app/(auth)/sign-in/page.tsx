@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import Oauth from "@/components/auth/oauth";
+import { Oauth } from "@/components/auth/oauth";
 
 const SignInPage = () => {
   return (

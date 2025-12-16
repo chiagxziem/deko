@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -8,7 +9,7 @@ import { env } from "@/lib/env";
 import { Button } from "../ui/button";
 import { cancelToastEl } from "../ui/toaster";
 
-const Oauth = () => {
+export const Oauth = () => {
   const [loadingProvider, setLoadingProvider] = useState<
     "github" | "google" | null
   >(null);
@@ -76,4 +77,15 @@ const Oauth = () => {
   );
 };
 
-export default Oauth;
+export const OauthSignInLink = () => {
+  return (
+    <Button
+      className={"px-0"}
+      nativeButton={false}
+      render={<Link href={"/sign-in"} />}
+      variant="link"
+    >
+      Sign in to continue
+    </Button>
+  );
+};
