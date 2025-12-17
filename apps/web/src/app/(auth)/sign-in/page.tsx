@@ -9,7 +9,7 @@ const SignInPage = () => {
         <h1 className="font-jetbrains font-semibold">
           SIGN IN TO{" "}
           <Link
-            className="text-primary transition-all duration-200 hover:underline hover:underline-offset-2"
+            className="text-primary underline-offset-4 transition-all duration-200 hover:underline"
             href={"/"}
           >
             LOGR
