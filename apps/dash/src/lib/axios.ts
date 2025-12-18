@@ -4,6 +4,7 @@ import { env } from "./env";
 
 const axiosClient = axios.create({
   baseURL: `${env.API_URL}/api`,
+  withCredentials: true,
 });
 
 export { axiosClient };

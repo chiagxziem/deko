@@ -4,8 +4,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "bun .output/server/index.mjs",
-    "preview": "vite preview"
+    "start": "bun .output/server/index.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
