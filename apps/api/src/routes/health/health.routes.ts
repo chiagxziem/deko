@@ -16,7 +16,7 @@ export const checkAPIHealth = createRoute({
   description: "Check API health status",
   responses: {
     [HttpStatusCodes.OK]: successContent({
-      description: "All orders retrieved",
+      description: "API is healthy",
       schema: z.object({
         status: z.string().default("ok"),
       }),

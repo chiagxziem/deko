@@ -9,7 +9,7 @@ export const authExamples = {
 
 export const userExamples = {
   user: {
-    id: "aBCDEF0gHijkLM1NO2PqrsTuVwXyza123e4567-e89b-12d3-a456-426614174000",
+    id: "123e4567-e89b-12d3-a456-426614174000",
     name: "User",
     email: "user@example.com",
     emailVerified: true,
