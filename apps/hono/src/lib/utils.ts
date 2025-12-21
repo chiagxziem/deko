@@ -25,7 +25,7 @@ export const successResponse = <TData, TDetails extends string>(
 export const errorResponse = (
   code: string,
   details: string,
-  fields?: Record<string, unknown>,
+  fields?: Record<string, string>,
 ) => {
   return {
     status: "error",

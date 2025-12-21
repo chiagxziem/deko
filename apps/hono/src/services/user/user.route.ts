@@ -1,6 +1,6 @@
-import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { UserUpdateSchema } from "@repo/db/validators/auth.validator";
 import { APIError } from "better-auth";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { validator } from "hono-openapi";
 
 import { createRouter } from "../../app";

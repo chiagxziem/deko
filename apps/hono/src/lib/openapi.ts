@@ -24,7 +24,7 @@ export const createErrorResponseSchema = () => {
     error: z.object({
       code: z.string(),
       details: z.string(),
-      fields: z.record(z.string(), z.unknown()),
+      fields: z.record(z.string(), z.string()),
     }),
   });
 };
@@ -62,7 +62,7 @@ export const createErrorResponse = (
       summary: string;
       code: string;
       details: string;
-      fields?: Record<string, unknown>;
+      fields?: Record<string, string>;
     }
   >,
 ) => {
