@@ -68,7 +68,6 @@
               [":PACKAGE_WITH_PROTOCOL:"],
               [":BUN:", ":NODE:"],
               ":BLANK_LINE:",
-              { "source": ["hono/**", "hono-*/**"] },
               [":PACKAGE:"],
               ":BLANK_LINE:",
               [":ALIAS:", ":PATH:"]
