@@ -1,6 +1,7 @@
 import { db } from "@repo/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins";
 
 import env from "./env";
 
@@ -42,7 +43,7 @@ export const auth = betterAuth({
           httpOnly: true,
           secure: env.NODE_ENV === "production",
           sameSite: "lax",
-          domain: env.NODE_ENV === "production" ? ".gozman.xyz" : undefined,
+          domain: env.NODE_ENV === "production" ? env.DOMAIN : undefined,
           expires: new Date(Date.now() + 60 * 60 * 24 * 30 * 1000),
         },
       },
@@ -52,4 +53,6 @@ export const auth = betterAuth({
   experimental: {
     joins: true,
   },
+
+  plugins: [bearer()],
 });

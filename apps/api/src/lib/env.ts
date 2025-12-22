@@ -9,6 +9,7 @@ const env = createEnv({
     PORT: z.coerce.number(),
     BASE_URL: z.url(),
     FRONTEND_URL: z.url(),
+    DOMAIN: z.string().optional(),
     DATABASE_URL: z.url(),
     REDIS_URL: z.url(),
     BETTER_AUTH_SECRET: z.string().min(1),
