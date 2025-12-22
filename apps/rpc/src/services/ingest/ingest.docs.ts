@@ -23,7 +23,7 @@ export const ingestLogDoc = describeRoute({
       }),
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
-      "Invalid request data": {
+      validationError: {
         summary: "Invalid request data",
         code: "INVALID_DATA",
         details: getErrDetailsFromErrFields(logsExamples.ingestLogValErrs),
@@ -33,7 +33,7 @@ export const ingestLogDoc = describeRoute({
     [HttpStatusCodes.UNAUTHORIZED]: createErrorResponse(
       "Invalid project token",
       {
-        "Invalid project token": {
+        invalidProjectToken: {
           summary: "Invalid project token",
           code: "INVALID_TOKEN",
           details: "Invalid or non-existing project token",

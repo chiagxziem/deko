@@ -53,7 +53,7 @@ export const updateUserDoc = describeRoute({
       }),
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
-      "Invalid request data": {
+      validationError: {
         summary: "Invalid request data",
         code: "INVALID_DATA",
         details: getErrDetailsFromErrFields(userExamples.updateUserValErrs),
