@@ -1,5 +1,5 @@
 {
-  "name": "@repo/dash",
+  "name": "@repo/web",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
-    "@repo/rpc": "workspace:*",
     "@t3-oss/env-core": "^0.13.10",
     "@tabler/icons-react": "^3.36.0",
     "@tanstack/react-query": "^5.90.12",
@@ -21,7 +20,6 @@
     "better-auth": "^1.4.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "hono": "^4.11.1",
     "nitro": "^3.0.1-alpha.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

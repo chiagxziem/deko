@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { userQueryOptions } from "@/server/user";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/dash")({
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(userQueryOptions);
 

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_auth")({
     const user = await context.queryClient.fetchQuery(userQueryOptions);
 
     if (user) {
-      throw redirect({ to: "/dashboard" });
+      throw redirect({ to: "/dash" });
     }
   },
   component: AuthLayout,

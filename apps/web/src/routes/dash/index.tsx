@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { cancelToastEl } from "@/components/ui/toaster";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/dashboard/")({
+export const Route = createFileRoute("/dash/")({
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const dashRoute = getRouteApi("/dashboard");
+  const dashRoute = getRouteApi("/dash");
   const { user } = dashRoute.useLoaderData();
   const navigate = useNavigate();
 

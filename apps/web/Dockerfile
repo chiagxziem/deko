@@ -11,7 +11,7 @@ RUN bun add -g turbo@^2.6.3
 COPY . .
 
 # Generate a partial monorepo with a pruned lockfile for a target workspace.
-RUN turbo prune dash --docker
+RUN turbo prune web --docker
 
 # --- BUILDER STAGE ---
 FROM base AS builder
@@ -38,7 +38,7 @@ ENV NODE_ENV=production \
     HOSTNAME="0.0.0.0" \
     PORT=3000
 
-COPY --from=builder /app/apps/dash/.output ./
+COPY --from=builder /app/apps/web/.output ./
 
 USER bun
 EXPOSE 3000

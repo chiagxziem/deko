@@ -21,7 +21,7 @@ function SignInPage() {
       await authClient.signIn.social(
         {
           provider,
-          callbackURL: `${env.VITE_BASE_URL}/dashboard`,
+          callbackURL: `${env.VITE_BASE_URL}/dash`,
         },
         {
           credentials: "include",
