@@ -1,10 +1,11 @@
 import type { User } from "@repo/db/schemas/auth.schema";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { isAxiosError } from "axios";
+import { DetailedError, parseResponse } from "hono/client";
 
-import { axiosClient, axiosErrMsg } from "@/lib/axios";
+import { axiosClient } from "@/lib/axios";
 import { queryKeys } from "@/lib/query";
+import { rpc, rpcErrMsg } from "@/lib/rpc";
 import type { ApiSuccessResponse } from "@/lib/types";
 import { headersMiddleware } from "@/middleware/headers-middleware";
 
@@ -15,19 +16,18 @@ export const $getUser = createServerFn({
   .middleware([headersMiddleware])
   .handler(async ({ context }) => {
     try {
-      const response = await axiosClient.get<ApiSuccessResponse<User>>(
+      const _axiosRes = await axiosClient.get<ApiSuccessResponse<User>>(
         "/user/me",
         {
           headers: context.headers,
         },
       );
 
-      return response.data.data;
+      const res = await parseResponse(rpc.user.me.$get());
+      return res;
     } catch (err) {
-      if (isAxiosError(err)) {
-        console.error("Error fetching user:", axiosErrMsg(err));
-      } else {
-        console.error("Unknown error fetching user:", err);
+      if (err instanceof DetailedError) {
+        console.error("Error fetching user:", rpcErrMsg(err));
       }
       return null;
     }
