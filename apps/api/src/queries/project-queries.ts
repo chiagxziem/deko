@@ -2,7 +2,7 @@ import { and, db, eq } from "@repo/db";
 import { project, projectToken } from "@repo/db/schemas/project.schema";
 import slugify from "slugify";
 
-import { encrypt } from "@/utils/encryption";
+import { encrypt } from "@/lib/encryption";
 
 /**
  * Get all projects for a user
