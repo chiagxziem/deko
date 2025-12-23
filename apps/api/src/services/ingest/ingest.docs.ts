@@ -40,6 +40,17 @@ export const ingestLogDoc = describeRoute({
         },
       },
     ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: createErrorResponse(
+      "Invalid status code",
+      {
+        invalidStatus: {
+          summary: "Invalid status code",
+          code: "INVALID_STATUS",
+          details:
+            "Invalid status code. Status code must be between 100 and 599.",
+        },
+      },
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });

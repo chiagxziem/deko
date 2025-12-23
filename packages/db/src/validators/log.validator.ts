@@ -15,11 +15,11 @@ export const LogSchema = z.object({
   ]),
   path: z.string().min(1),
   status: z.number(),
-  timestamp: z.iso.datetime(),
+  eventTs: z.iso.datetime(),
   duration: z.number(),
   env: z.string().min(1),
+  level: z.enum(["debug", "info", "warn", "error"]).default("info"),
   sessionId: z.string().optional(),
-  level: z.enum(["debug", "info", "warn", "error"]).optional(),
   message: z.string().optional(),
   meta: z.record(z.string(), z.unknown()).optional(),
 });

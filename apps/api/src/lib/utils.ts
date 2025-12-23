@@ -43,3 +43,18 @@ export const errorResponse = (
  * @returns The string without hyphens
  */
 export const stripHyphens = (str: string): string => str.replace(/-/g, "");
+
+/**
+ * Normalizes a log level to one of "debug", "info", "warn", or "error".
+ * @param level - The log level to normalize
+ * @returns The normalized log level
+ */
+export const normalizeLevel = (
+  level: string,
+): "debug" | "info" | "warn" | "error" => {
+  const l = level?.toLowerCase();
+  if (l === "debug" || l === "info" || l === "warn" || l === "error") {
+    return l;
+  }
+  return "info";
+};
