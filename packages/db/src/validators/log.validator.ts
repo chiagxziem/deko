@@ -15,7 +15,7 @@ export const LogSchema = z.object({
   ]),
   path: z.string().min(1),
   status: z.number(),
-  eventTs: z.iso.datetime(),
+  timestamp: z.iso.datetime(),
   duration: z.number(),
   env: z.string().min(1),
   level: z.enum(["debug", "info", "warn", "error"]).default("info"),

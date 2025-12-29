@@ -24,7 +24,6 @@ function SignInPage() {
           callbackURL: `${env.VITE_BASE_URL}/dash`,
         },
         {
-          credentials: "include",
           onRequest: () => {
             setLoadingProvider(provider);
           },

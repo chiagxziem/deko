@@ -22,7 +22,7 @@ export const $getUser = createServerFn({
       return res.data.data;
     } catch (err) {
       if (isAxiosError(err)) {
-        console.error("Error fetching user:", axiosErrMsg(err));
+        console.error("Error getting user:", axiosErrMsg(err));
       }
       return null;
     }

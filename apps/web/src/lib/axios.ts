@@ -3,7 +3,7 @@ import axios, { type AxiosError } from "axios";
 import { env } from "./env";
 
 export const axiosClient = axios.create({
-  baseURL: `${env.API_URL}/api`,
+  baseURL: env.API_URL,
   withCredentials: true,
 });
 

@@ -41,6 +41,8 @@ ingest.get(
       );
     }
 
+    // TODO: Add trace/request ID
+
     const { projectToken: _pt, ...logEvent } = {
       ...log,
       projectId: project.id,

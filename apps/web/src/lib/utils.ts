@@ -17,13 +17,3 @@ export const fontsHref = [
   "https://cdn.jsdelivr.net/fontsource/fonts/inter:vf@latest/latin-wght-normal.woff2",
   "https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono:vf@latest/latin-wght-normal.woff2",
 ];
-
-// export const handleAPIError = (err: unknown, message: string) => {
-//   if (isAxiosError(err)) {
-//     console.error(message, axiosErrMsg(err));
-//   } else if (err instanceof DetailedError) {
-//     console.error(message, rpcErrMsg(err));
-//   } else {
-//     console.error(`Unknown ${message}`, err);
-//   }
-// };
