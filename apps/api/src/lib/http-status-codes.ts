@@ -270,6 +270,12 @@ export const REQUEST_TIMEOUT = 408;
  */
 export const REQUEST_TOO_LONG = 413;
 /**
+ * Official Documentation @ https://tools.ietf.org/html/rfc7231#section-6.5.11
+ *
+ * Request entity is larger than limits defined by server; the server might close the connection or return an Retry-After header field.
+ */
+export const PAYLOAD_TOO_LARGE = 413;
+/**
  * Official Documentation @ https://tools.ietf.org/html/rfc7231#section-6.5.12
  *
  * The URI requested by the client is longer than the server is willing to interpret.
@@ -401,6 +407,7 @@ const HttpStatusCodes = {
   REQUEST_HEADER_FIELDS_TOO_LARGE,
   REQUEST_TIMEOUT,
   REQUEST_TOO_LONG,
+  PAYLOAD_TOO_LARGE,
   REQUEST_URI_TOO_LONG,
   REQUESTED_RANGE_NOT_SATISFIABLE,
   RESET_CONTENT,

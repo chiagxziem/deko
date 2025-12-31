@@ -13,13 +13,15 @@ import { logsExamples } from "@/lib/openapi-examples";
 const tags = ["Ingest"];
 
 export const ingestLogDoc = describeRoute({
-  description: "Ingest a log",
+  description: "Ingest log(s)",
   tags,
   responses: {
-    [HttpStatusCodes.OK]: createSuccessResponse("Log ingested", {
-      details: "Log ingested successfully",
+    [HttpStatusCodes.OK]: createSuccessResponse("Log(s) ingested", {
+      details: "Logs ingested",
       dataSchema: z.object({
-        status: z.literal("ok"),
+        accepted: z.number(),
+        rejected: z.number(),
+        requestId: z.string(),
       }),
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
@@ -31,23 +33,37 @@ export const ingestLogDoc = describeRoute({
       },
     }),
     [HttpStatusCodes.UNAUTHORIZED]: createErrorResponse(
-      "Invalid project token",
+      "Missing or invalid token",
       {
-        invalidProjectToken: {
-          summary: "Invalid project token",
+        missingToken: {
+          summary: "Missing token",
+          code: "MISSING_TOKEN",
+          details: "Service token is required",
+        },
+        invalidToken: {
+          summary: "Invalid token",
           code: "INVALID_TOKEN",
-          details: "Invalid or non-existing project token",
+          details: "Invalid or non-existing service token",
+        },
+      },
+    ),
+    [HttpStatusCodes.PAYLOAD_TOO_LARGE]: createErrorResponse(
+      "Batch too large",
+      {
+        batchTooLarge: {
+          summary: "Batch too large",
+          code: "BATCH_TOO_LARGE",
+          details: "Batch size exceeds maximum of 100 events",
         },
       },
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: createErrorResponse(
-      "Invalid status code",
+      "No valid events",
       {
-        invalidStatus: {
-          summary: "Invalid status code",
-          code: "INVALID_STATUS",
-          details:
-            "Invalid status code. Status code must be between 100 and 599.",
+        noValidEvents: {
+          summary: "No valid events",
+          code: "NO_VALID_EVENTS",
+          details: "All events in the request were rejected",
         },
       },
     ),

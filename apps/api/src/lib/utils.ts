@@ -58,3 +58,29 @@ export const normalizeLevel = (
   }
   return "info";
 };
+
+/**
+ * Extracts the trace ID from a traceparent header.
+ * @param traceparent The traceparent header to extract the trace ID from.
+ * @returns The trace ID, or null if the traceparent header is invalid.
+ */
+export const extractTraceId = (traceparent?: string): string | null => {
+  if (!traceparent) return null;
+
+  const parts = traceparent.split("-");
+  if (parts.length !== 4) return null;
+
+  const traceId = parts[1];
+
+  // W3C trace-id must be 16 bytes (32 hex chars)
+  if (!/^[0-9a-f]{32}$/i.test(traceId)) {
+    return null;
+  }
+
+  // Disallow all-zero trace IDs
+  if (/^0{32}$/.test(traceId)) {
+    return null;
+  }
+
+  return traceId;
+};
