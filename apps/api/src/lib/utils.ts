@@ -84,3 +84,11 @@ export const extractTraceId = (traceparent?: string): string | null => {
 
   return traceId;
 };
+
+export const hashValue = async (value: string) => {
+  return Bun.password.hash(value);
+};
+
+export const verifyHashedValue = (hash: string, value: string) => {
+  return Bun.password.verify(hash, value);
+};

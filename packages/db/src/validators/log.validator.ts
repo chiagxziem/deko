@@ -44,9 +44,8 @@ export const EventSchema = z.object({
   path: z.string().min(1),
   status: z.number(),
   duration: z.number(),
-  // TODO: make ipHash and userAgent required
-  ipHash: z.string().optional(),
-  userAgent: z.string().optional(),
+  ipHash: z.string(),
+  userAgent: z.string(),
   message: z.string().optional(),
   sessionId: z.string().optional(),
   meta: z.record(z.string(), z.unknown()).optional(),

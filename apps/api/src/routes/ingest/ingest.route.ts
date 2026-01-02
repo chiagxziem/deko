@@ -2,6 +2,7 @@ import { type Event, IngestSchema } from "@repo/db/validators/log.validator";
 import { logEventsQueue } from "@repo/redis";
 import type { BulkJobOptions } from "bullmq";
 import { validator } from "hono-openapi";
+import { getConnInfo } from "hono/bun";
 import { z } from "zod";
 
 import { createRouter } from "@/app";
@@ -9,6 +10,7 @@ import HttpStatusCodes from "@/lib/http-status-codes";
 import {
   errorResponse,
   extractTraceId,
+  hashValue,
   normalizeLevel,
   successResponse,
 } from "@/lib/utils";
@@ -83,6 +85,11 @@ ingest.post(
     let accepted = 0;
     let rejected = 0;
 
+    const connectionInfo = getConnInfo(c);
+    const ipHash = await hashValue(
+      connectionInfo.remote.address ?? "127.0.0.1",
+    );
+
     for (const log of logs) {
       // status validation
       if (log.status < 100 || log.status > 599) {
@@ -104,8 +111,8 @@ ingest.post(
         message: log.message,
         sessionId: log.sessionId,
         meta: log.meta ?? {},
-        // TODO: ipHashed
-        // TODO: userAgent
+        ipHash,
+        userAgent: c.req.header("User-Agent") ?? "",
       };
 
       // per-event size guard (~32KB)
