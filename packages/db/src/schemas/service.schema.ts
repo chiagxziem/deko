@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { timestamps } from "../lib/helpers";
-import { deadLetter } from "./event.schema";
+import { deadLetter, logEvent } from "./event.schema";
 
 export const service = pgTable("service", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -20,6 +20,7 @@ export const service = pgTable("service", {
 export const serviceRelations = relations(service, ({ many }) => ({
   tokens: many(serviceToken),
   deadLetters: many(deadLetter),
+  logEvents: many(logEvent),
 }));
 
 export const serviceToken = pgTable(

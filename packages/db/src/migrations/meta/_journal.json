@@ -8,6 +8,13 @@
       "when": 1767054037458,
       "tag": "0000_curious_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767384303787,
+      "tag": "0001_heavy_thena",
+      "breakpoints": true
     }
   ]
 }
