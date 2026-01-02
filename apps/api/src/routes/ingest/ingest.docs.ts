@@ -55,6 +55,11 @@ export const ingestLogDoc = describeRoute({
           code: "BATCH_TOO_LARGE",
           details: "Batch size exceeds maximum of 100 events",
         },
+        payloadTooLarge: {
+          summary: "Payload too large",
+          code: "PAYLOAD_TOO_LARGE",
+          details: `Request body exceeds maximum size of ${256 * 1024} bytes`,
+        },
       },
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: createErrorResponse(

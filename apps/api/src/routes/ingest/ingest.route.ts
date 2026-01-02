@@ -14,6 +14,7 @@ import {
   normalizeLevel,
   successResponse,
 } from "@/lib/utils";
+import { maxBodySize } from "@/middleware/max-body-size";
 import { validationHook } from "@/middleware/validation-hook";
 import { getServiceByToken } from "@/queries/service-queries";
 import { ingestLogDoc } from "./ingest.docs";
@@ -25,6 +26,7 @@ const ingest = createRouter();
 
 ingest.post(
   "/",
+  maxBodySize(256 * 1024),
   ingestLogDoc,
   validator(
     "header",
