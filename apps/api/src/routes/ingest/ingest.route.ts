@@ -1,5 +1,5 @@
 import { type Event, IngestSchema } from "@repo/db/validators/log.validator";
-import { logEventsQueue } from "@repo/redis";
+import { logEventsQueue, redisClient as redis } from "@repo/redis";
 import type { BulkJobOptions } from "bullmq";
 import { validator } from "hono-openapi";
 import { getConnInfo } from "hono/bun";
@@ -14,15 +14,13 @@ import {
   normalizeLevel,
   successResponse,
 } from "@/lib/utils";
+import { ingestRateLimit } from "@/middleware/ingest-rate-limit";
 import { maxBodySize } from "@/middleware/max-body-size";
 import { validationHook } from "@/middleware/validation-hook";
 import { getServiceByToken } from "@/queries/service-queries";
 import { ingestLogDoc } from "./ingest.docs";
 
 const ingest = createRouter();
-
-// TODO: add rate limiting: 10_000 events per minute per project token,
-// TODO: and a max of 100 requests per second per project token
 
 ingest.post(
   "/",
@@ -40,6 +38,7 @@ ingest.post(
     z.union([IngestSchema, z.array(IngestSchema)]),
     validationHook,
   ),
+  ingestRateLimit,
   async (c) => {
     const rawBody = c.req.valid("json");
     const logs = Array.isArray(rawBody) ? rawBody : [rawBody];
@@ -63,7 +62,60 @@ ingest.post(
       );
     }
 
+    // --- START EVENT QUOTA CHECK ---
+    // only the per-minute event quota is checked here to prevent connection spam
+    // the per-second request limit is checked in the ingest rate limit middleware
+    // this implements the "10,000 events per minute" logic accurately by counting batch size
+
+    const keyMin = `ingest-rate-limit:${serviceToken}:min`;
+    const now = Date.now();
+    const limitMin = 10_000;
+
+    try {
+      await redis.send("MULTI", []);
+      await redis.send("ZREMRANGEBYSCORE", [
+        keyMin,
+        "0",
+        (now - 60_000).toString(),
+      ]);
+      await redis.send("ZCARD", [keyMin]);
+      // biome-ignore lint/suspicious/noExplicitAny: required
+      const quotaResults = (await redis.send("EXEC", [])) as any[];
+      const currentEventCount = quotaResults[1] ?? 0;
+
+      if (currentEventCount + logs.length > limitMin) {
+        return c.json(
+          errorResponse(
+            "TOO_MANY_REQUESTS",
+            "Rate limit exceeded. Max 10,000 events per minute.",
+          ),
+          HttpStatusCodes.TOO_MANY_REQUESTS,
+        );
+      }
+
+      // add each event from the batch into the sliding window
+      await redis.send("MULTI", []);
+      for (let i = 0; i < logs.length; i++) {
+        // we use a slightly offset random member for each log in the batch
+        const eventMember = `${now}-${i}-${Math.random().toString(36).substring(2, 5)}`;
+        await redis.send("ZADD", [keyMin, now.toString(), eventMember]);
+      }
+      await redis.send("PEXPIRE", [keyMin, "60000"]);
+      await redis.send("EXEC", []);
+    } catch (err) {
+      console.error("Ingest Event Quota Check Error:", err);
+      return c.json(
+        errorResponse(
+          "INTERNAL_SERVER_ERROR",
+          "Internal server error. Please try again later.",
+        ),
+        HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      );
+    }
+    // --- END EVENT QUOTA CHECK ---
+
     const service = await getServiceByToken(serviceToken);
+    // ... rest of your existing logic ...
     if (!service) {
       return c.json(
         errorResponse("INVALID_TOKEN", "Invalid or non-existing service token"),
