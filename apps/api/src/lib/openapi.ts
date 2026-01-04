@@ -128,7 +128,7 @@ export const createGenericErrorResponse = (
 /**
  * Helper function to create a rate limit error response for OpenAPI responses.
  */
-export const createRateLimitErrorResponse = () => {
+export const createRateLimitErrorResponse = (details?: string) => {
   return {
     description: "Rate limit exceeded",
     content: {
@@ -142,6 +142,7 @@ export const createRateLimitErrorResponse = () => {
               error: {
                 code: "TOO_MANY_REQUESTS",
                 details:
+                  details ??
                   "Too many requests have been made. Please try again later.",
                 fields: {},
               },
@@ -156,7 +157,7 @@ export const createRateLimitErrorResponse = () => {
 /**
  * Helper function to create a server error response for OpenAPI responses.
  */
-export const createServerErrorResponse = () => {
+export const createServerErrorResponse = (details?: string) => {
   return {
     description: "Internal server error",
     content: {
@@ -169,7 +170,7 @@ export const createServerErrorResponse = () => {
               status: "error",
               error: {
                 code: "INTERNAL_SERVER_ERROR",
-                details: "An unexpected error occurred",
+                details: details ?? "An unexpected error occurred",
                 fields: {},
               },
             },
