@@ -48,12 +48,8 @@
           "name": "dead_letter_service_id_service_id_fk",
           "tableFrom": "dead_letter",
           "tableTo": "service",
-          "columnsFrom": [
-            "service_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["service_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -259,12 +255,8 @@
           "name": "log_event_service_id_service_id_fk",
           "tableFrom": "log_event",
           "tableTo": "service",
-          "columnsFrom": [
-            "service_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["service_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -408,12 +400,8 @@
           "name": "service_token_service_id_service_id_fk",
           "tableFrom": "service_token",
           "tableTo": "service",
-          "columnsFrom": [
-            "service_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["service_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -423,9 +411,7 @@
         "service_token_encrypted_token_unique": {
           "name": "service_token_encrypted_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "encrypted_token"
-          ]
+          "columns": ["encrypted_token"]
         }
       },
       "policies": {},
