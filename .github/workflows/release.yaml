@@ -9,11 +9,11 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  lint:
     uses: ./.github/workflows/lint.yaml
 
   release:
-    needs: [test]
+    needs: [lint]
     runs-on: ubuntu-latest
     permissions:
       contents: write
