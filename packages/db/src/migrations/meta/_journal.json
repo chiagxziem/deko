@@ -29,6 +29,13 @@
       "when": 1767470724258,
       "tag": "0003_log_stats_agg",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767798950686,
+      "tag": "0004_plain_blizzard",
+      "breakpoints": true
     }
   ]
 }
