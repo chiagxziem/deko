@@ -2,7 +2,7 @@ import z from "zod";
 
 export const IngestSchema = z.object({
   level: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  timestamp: z.iso.datetime(),
+  timestamp: z.number().transform((n) => new Date(n)),
   environment: z.string().min(1),
   method: z.enum([
     "GET",
