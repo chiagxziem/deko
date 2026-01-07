@@ -1,8 +1,8 @@
 import { type Event, IngestSchema } from "@repo/db/validators/log.validator";
 import { logEventsQueue, redisClient as redis } from "@repo/redis";
 import type { BulkJobOptions } from "bullmq";
-import { validator } from "hono-openapi";
 import { getConnInfo } from "hono/bun";
+import { validator } from "hono-openapi";
 import { z } from "zod";
 
 import { createRouter } from "@/app";

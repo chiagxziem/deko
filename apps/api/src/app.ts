@@ -1,10 +1,10 @@
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
-import { openAPIRouteHandler } from "hono-openapi";
 import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
+import { openAPIRouteHandler } from "hono-openapi";
 
 import env from "@/lib/env";
 import emojiFavicon from "@/middleware/emoji-favicon";
