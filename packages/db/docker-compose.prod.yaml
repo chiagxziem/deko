@@ -1,7 +1,6 @@
 services:
-  postgres:
+  logr-timescaledb:
     image: timescale/timescaledb-ha:pg17
-    container_name: logr-pg-prod
     restart: always
 
     # restrict resources to prevent the DB from crashing the host
@@ -21,7 +20,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
 
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ../files/pgdata:/var/lib/postgresql/data
 
     networks:
       - dokploy-network
@@ -41,9 +40,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-volumes:
-  pgdata:
 
 networks:
   dokploy-network:
