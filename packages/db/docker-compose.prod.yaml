@@ -23,6 +23,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+    networks:
+      - dokploy-network
+
     # shared_preload_libraries is mandatory for timescaledb
     # max_locks_per_transaction is increased because hypertables use many chunks
     command: >
@@ -41,3 +44,7 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  dokploy-network:
+    external: true
