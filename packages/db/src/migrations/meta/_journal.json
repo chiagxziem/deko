@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1767054037458,
-      "tag": "0000_curious_whistler",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1767384303787,
-      "tag": "0001_heavy_thena",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1767469345359,
-      "tag": "0002_init_timescale",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1767470724258,
-      "tag": "0003_log_stats_agg",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1767798950686,
-      "tag": "0004_plain_blizzard",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1767812589080,
-      "tag": "0005_fine_wiccan",
+      "when": 1767900909652,
+      "tag": "0000_organic_fabian_cortez",
       "breakpoints": true
     }
   ]
