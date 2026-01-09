@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.3 AS base
+FROM oven/bun:1.3.3-alpine AS base
 
 # --- PREPARE STAGE ---
 FROM base AS prepare
@@ -41,4 +41,4 @@ COPY --from=builder /app/apps/worker/worker-exe ./worker-exe
 
 USER bun
 
-ENTRYPOINT [ "./worker-exe" ]
+ENTRYPOINT [ "/bin/sh", "-c", "./worker-exe" ]

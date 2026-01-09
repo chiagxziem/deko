@@ -1,11 +1,11 @@
 name: logr-db
 
 services:
-  postgres:
+  pg:
     image: timescale/timescaledb-ha:pg17
-    container_name: logr-pg
+    # container_name: logr-pg
     ports:
-      - "5434:5432"
+      - "5432:5432"
     environment:
       POSTGRES_DB: logr
       POSTGRES_USER: user
