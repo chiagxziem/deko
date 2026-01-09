@@ -6,10 +6,8 @@ const env = createEnv({
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
-    PORT: z.coerce.number(),
-    BASE_URL: z.url(),
-    FRONTEND_URL: z.url(),
-    DOMAIN: z.string().optional(),
+    API_URL: z.url(),
+    WEB_URL: z.url(),
     DATABASE_URL: z.url(),
     REDIS_URL: z.url(),
     ENCRYPTION_KEY: z.string().min(32),

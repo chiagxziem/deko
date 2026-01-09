@@ -20,7 +20,7 @@ export const createApp = () => {
   const app = createRouter().basePath("/api");
 
   // CORS
-  app.use("/*", cors({ origin: env.FRONTEND_URL, credentials: true }));
+  app.use("/*", cors({ origin: env.WEB_URL, credentials: true }));
 
   // Security
   app.use(
@@ -51,7 +51,7 @@ export const createApp = () => {
           description: "The API for an API logging app.",
           version: "0.0.1",
         },
-        servers: [{ url: `${env.BASE_URL}` }],
+        servers: [{ url: `${env.API_URL}` }],
       },
     }),
   );

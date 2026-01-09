@@ -9,4 +9,7 @@ app.route("/health", health);
 app.route("/ingest", ingest);
 app.route("/services", service);
 
-export default app;
+export default {
+  port: 8000,
+  fetch: app.fetch,
+};

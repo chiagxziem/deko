@@ -80,6 +80,7 @@
     "packages/db": {
       "name": "@repo/db",
       "dependencies": {
+        "@t3-oss/env-core": "^0.13.10",
         "drizzle-orm": "^0.45.1",
         "drizzle-zod": "^0.8.3",
         "pg": "^8.16.3",
@@ -94,6 +95,7 @@
     "packages/redis": {
       "name": "@repo/redis",
       "dependencies": {
+        "@t3-oss/env-core": "^0.13.10",
         "bullmq": "^5.66.4",
         "zod": "^4.3.5",
       },
