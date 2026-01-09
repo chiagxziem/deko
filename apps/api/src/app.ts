@@ -20,7 +20,17 @@ export const createApp = () => {
   const app = createRouter().basePath("/api");
 
   // CORS
-  app.use("/*", cors({ origin: env.WEB_URL, credentials: true }));
+  const corsOrigins = env.CORS_ORIGINS
+    ? env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
+    : "*";
+
+  app.use(
+    "/*",
+    cors({
+      origin: corsOrigins,
+      credentials: true,
+    }),
+  );
 
   // Security
   app.use(

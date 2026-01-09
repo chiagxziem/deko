@@ -11,7 +11,9 @@ const env = createEnv({
     DATABASE_URL: z.url(),
     OPENAPI_SERVER_URL: z.url(),
     REDIS_URL: z.url(),
-    ENCRYPTION_KEY: z.string().min(32),
+    ENCRYPTION_KEY: z.string().min(1),
+    // Comma-separated list of allowed CORS origins (e.g., "http://localhost:3120,https://app.example.com")
+    CORS_ORIGINS: z.string().optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
