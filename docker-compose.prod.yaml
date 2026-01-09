@@ -84,6 +84,7 @@ services:
       API_URL: "http://api:8000"
       WEB_URL: "http://web:3000"
       DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@pg:5432/${PG_NAME}
+      OPENAPI_SERVER_URL: ${OPENAPI_SERVER_URL}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
 

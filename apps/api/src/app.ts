@@ -51,7 +51,7 @@ export const createApp = () => {
           description: "The API for an API logging app.",
           version: "0.0.1",
         },
-        servers: [{ url: `${env.API_URL}` }],
+        servers: [{ url: `${env.OPENAPI_SERVER_URL}` }],
       },
     }),
   );

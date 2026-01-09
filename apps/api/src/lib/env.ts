@@ -9,6 +9,7 @@ const env = createEnv({
     API_URL: z.url(),
     WEB_URL: z.url(),
     DATABASE_URL: z.url(),
+    OPENAPI_SERVER_URL: z.url(),
     REDIS_URL: z.url(),
     ENCRYPTION_KEY: z.string().min(32),
   },
