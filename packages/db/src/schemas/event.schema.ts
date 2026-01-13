@@ -16,9 +16,7 @@ export const logEvent = pgTable(
   "log_event",
   {
     id: uuid("id").defaultRandom(),
-    serviceId: uuid("service_id")
-      .references(() => service.id)
-      .notNull(),
+    serviceId: uuid("service_id").notNull(),
     timestamp: timestamp("timestamp").notNull(),
     receivedAt: timestamp("received_at").defaultNow().notNull(),
     level: text("level").notNull(),
@@ -66,9 +64,7 @@ export const logEventRelations = relations(logEvent, ({ one }) => ({
 
 export const deadLetter = pgTable("dead_letter", {
   id: uuid("id").primaryKey().defaultRandom(),
-  serviceId: uuid("service_id")
-    .references(() => service.id)
-    .notNull(),
+  serviceId: uuid("service_id").notNull(),
   failedAt: timestamp("failed_at").defaultNow().notNull(),
   reason: text("reason").notNull(),
   payload: jsonb("payload").default({}).notNull(),

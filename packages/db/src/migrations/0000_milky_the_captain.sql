@@ -46,8 +46,6 @@ CREATE TABLE "service_token" (
 	CONSTRAINT "service_token_hashed_token_unique" UNIQUE("hashed_token")
 );
 --> statement-breakpoint
-ALTER TABLE "dead_letter" ADD CONSTRAINT "dead_letter_service_id_service_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."service"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "log_event" ADD CONSTRAINT "log_event_service_id_service_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."service"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "service_token" ADD CONSTRAINT "service_token_service_id_service_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."service"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "log_event_service_timestamp_idx" ON "log_event" USING btree ("service_id","timestamp");--> statement-breakpoint
 CREATE INDEX "log_event_service_level_time_idx" ON "log_event" USING btree ("service_id","level","timestamp" DESC NULLS LAST);--> statement-breakpoint

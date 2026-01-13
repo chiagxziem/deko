@@ -1,6 +1,6 @@
 {
-  "id": "1fffc7fa-55db-432d-8a42-5507cb34ab4c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "8f649c3e-d0d9-46d1-8d6f-9e64b6c0b068",
+  "prevId": "4f4c1174-c5a9-4ae7-bbe9-2f47c0fc0a0b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -172,9 +172,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "log_event_service_level_time_idx": {
           "name": "log_event_service_level_time_idx",
@@ -199,9 +199,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "log_event_service_status_time_idx": {
           "name": "log_event_service_status_time_idx",
@@ -226,9 +226,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -360,9 +360,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "service_token_hashedToken_idx": {
           "name": "service_token_hashedToken_idx",
@@ -375,34 +375,34 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "service_token_service_id_service_id_fk": {
           "name": "service_token_service_id_service_id_fk",
           "tableFrom": "service_token",
-          "tableTo": "service",
           "columnsFrom": [
             "service_id"
           ],
+          "tableTo": "service",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "service_token_hashed_token_unique": {
           "name": "service_token_hashed_token_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "hashed_token"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -412,11 +412,10 @@
   },
   "enums": {},
   "schemas": {},
-  "sequences": {},
-  "roles": {},
-  "policies": {},
   "views": {
     "public.log_hourly_stats": {
+      "name": "log_hourly_stats",
+      "schema": "public",
       "columns": {
         "bucket": {
           "name": "bucket",
@@ -455,12 +454,13 @@
           "notNull": true
         }
       },
-      "name": "log_hourly_stats",
-      "schema": "public",
-      "isExisting": true,
-      "materialized": false
+      "materialized": false,
+      "isExisting": true
     }
   },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
   "_meta": {
     "columns": {},
     "schemas": {},
