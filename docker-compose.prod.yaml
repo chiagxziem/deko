@@ -51,7 +51,7 @@ services:
     # enable password protection & AOF persistence for data safety (updates every second)
     # set max memory to 400MB & use LRU eviction policy
     command: >
-      redis-server 
+      redis-server
       --requirepass "${REDIS_PASSWORD}"
       --appendonly yes
       --appendfsync everysec
