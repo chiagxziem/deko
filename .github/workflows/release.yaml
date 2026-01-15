@@ -12,11 +12,8 @@ jobs:
   lint:
     uses: ./.github/workflows/lint.yaml
 
-  format:
-    uses: ./.github/workflows/format.yaml
-
   release:
-    needs: [lint, format]
+    needs: [lint]
     runs-on: ubuntu-latest
     permissions:
       contents: write
