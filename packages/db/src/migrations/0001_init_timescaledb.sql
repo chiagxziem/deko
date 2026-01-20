@@ -1,7 +1,7 @@
 -- enable timescaledb extension
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 
--- transform the table into a hypertable
+-- transform the already created table into a hypertable
 SELECT create_hypertable('log_event', 'timestamp', chunk_time_interval => INTERVAL '1 day');
 
 -- enable compression
