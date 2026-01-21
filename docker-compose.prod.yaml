@@ -113,7 +113,7 @@ services:
       api:
         condition: service_started
     environment:
-      API_URL: ${API_URL}
+      API_URL: http://api:8000
       DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@pg:5432/${PG_NAME}
 
 volumes:
