@@ -3,7 +3,7 @@ services:
     image: timescale/timescaledb:2.24.0-pg18
     restart: always
     ports:
-      - 5432:5432
+      - 5432
     networks:
       - dokploy-network
     deploy:
