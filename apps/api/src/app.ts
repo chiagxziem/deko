@@ -1,3 +1,4 @@
+import type { AppEnv } from "@/types";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
@@ -10,7 +11,6 @@ import env from "@/lib/env";
 import emojiFavicon from "@/middleware/emoji-favicon";
 import errorHandler from "@/middleware/error-handler";
 import notFoundRoute from "@/middleware/not-found-route";
-import type { AppEnv } from "@/types";
 
 export const createRouter = () => {
   return new Hono<AppEnv>({ strict: false });
