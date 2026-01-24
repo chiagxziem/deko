@@ -5,9 +5,9 @@ import service from "@/routes/service/service.route";
 
 const app = createApp();
 
-app.route("/health", health);
-app.route("/ingest", ingest);
-app.route("/services", service);
+app.route("/api/health", health);
+app.route("/api/ingest", ingest);
+app.route("/api/services", service);
 
 export default {
   port: 8000,

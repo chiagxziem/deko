@@ -12,12 +12,14 @@ import emojiFavicon from "@/middleware/emoji-favicon";
 import errorHandler from "@/middleware/error-handler";
 import notFoundRoute from "@/middleware/not-found-route";
 
+import { nonWwwRedirect } from "./middleware/non-www-redirect";
+
 export const createRouter = () => {
   return new Hono<AppEnv>({ strict: false });
 };
 
 export const createApp = () => {
-  const app = createRouter().basePath("/api");
+  const app = createRouter();
 
   // CORS
   const corsOrigins = env.CORS_ORIGINS
@@ -44,14 +46,17 @@ export const createApp = () => {
     }),
   );
 
-  // Middleware for compressing the response body, logging requests and setting up the emoji favicon
+  // Non-www redirect
+  app.use("*", nonWwwRedirect);
+
+  // Compressing the response body, log requests and set up the emoji favicon
   app.use(compress());
   app.use(logger());
   app.use(emojiFavicon("🪵"));
 
   // OpenAPI
   app.get(
-    "/doc",
+    "/api/doc",
     openAPIRouteHandler(app, {
       documentation: {
         info: {
@@ -66,7 +71,7 @@ export const createApp = () => {
 
   // Scalar
   app.get(
-    "/reference",
+    "/api/reference",
     Scalar({
       url: "/api/doc",
       persistAuth: true,
