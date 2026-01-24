@@ -32,7 +32,7 @@ export const createApp = () => {
     }),
   );
 
-  // Security
+  // Security Headers
   app.use(
     "*",
     secureHeaders({

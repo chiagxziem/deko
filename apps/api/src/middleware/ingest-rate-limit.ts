@@ -25,9 +25,8 @@ export const ingestRateLimit = createMiddleware(async (c, next) => {
     await redis.send("MULTI", []);
     await redis.send("ZREMRANGEBYSCORE", [keySec, "0", (now - 1_000).toString()]);
     await redis.send("ZCARD", [keySec]);
-    // biome-ignore lint/suspicious/noExplicitAny: required
-    const results = (await redis.send("EXEC", [])) as any[];
 
+    const results = (await redis.send("EXEC", [])) as any[];
     const currentCountSec = results[1] ?? 0;
 
     if (currentCountSec >= limitSec) {
