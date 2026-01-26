@@ -52,6 +52,11 @@ const logEventsWorker = new Worker<Event, void>(
 console.log("Starting log events worker...");
 void logEventsWorker.run();
 
+logEventsWorker.on("completed", (job) => {
+  if (process.env.NODE_ENV === "production") return;
+  console.log(`[Job ${job.id}] COMPLETED`);
+});
+
 // If a job fails, move it to the dead_letter table
 logEventsWorker.on("failed", async (job, error) => {
   const attempts = job?.attemptsMade ?? 0;

@@ -38,7 +38,7 @@ export type TimeseriesFilters = {
  * @param period - The period to convert (1h, 24h, 7d, 30d)
  * @returns The start date for the period
  */
-function periodToDate(period: Period): Date {
+const periodToDate = (period: Period): Date => {
   const now = new Date();
   switch (period) {
     case "1h":
@@ -50,7 +50,27 @@ function periodToDate(period: Period): Date {
     case "30d":
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
-}
+};
+
+/**
+ * Returns the from/to dates for the previous period (for comparison stats)
+ * @param period - The period to get the previous range for
+ * @returns Object with `from` and `to` dates for the previous period
+ */
+export const getPrevPeriod = (period: Period): { from: Date; to: Date } => {
+  const now = new Date();
+  const periodMs = {
+    "1h": 60 * 60 * 1000,
+    "24h": 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000,
+  }[period];
+
+  return {
+    from: new Date(now.getTime() - 2 * periodMs),
+    to: new Date(now.getTime() - periodMs),
+  };
+};
 
 /**
  * Determines the best granularity based on the period.
@@ -58,7 +78,7 @@ function periodToDate(period: Period): Date {
  * - 24h → hour (24 data points)
  * - 7d/30d → day (7-30 data points)
  */
-function getDefaultGranularity(period: Period): Granularity {
+const getDefaultGranularity = (period: Period): Granularity => {
   switch (period) {
     case "1h":
       return "minute";
@@ -68,7 +88,7 @@ function getDefaultGranularity(period: Period): Granularity {
     case "30d":
       return "day";
   }
-}
+};
 
 /**
  * Converts a path filter with wildcards to a SQL LIKE pattern.
@@ -76,20 +96,20 @@ function getDefaultGranularity(period: Period): Granularity {
  * @param path - The path pattern to convert
  * @returns The SQL LIKE pattern
  */
-function pathToLikePattern(path: string): string {
+const pathToLikePattern = (path: string): string => {
   // Escape SQL LIKE special characters (% and _) in the path
   let pattern = path.replace(/%/g, "\\%").replace(/_/g, "\\_");
   // Convert * wildcards to SQL %
   pattern = pattern.replace(/\*/g, "%");
   return pattern;
-}
+};
 
 /**
  * Fetches logs for a specific service based on the provided filters.
  * @param filters - The filters to apply to the query.
  * @returns The logs for the specified service.
  */
-export async function getServiceLogs(filters: LogFilters) {
+export const getServiceLogs = async (filters: LogFilters) => {
   const {
     serviceId,
     level,
@@ -148,7 +168,7 @@ export async function getServiceLogs(filters: LogFilters) {
     .orderBy(desc(logEvent.timestamp))
     .limit(limit)
     .offset(offset);
-}
+};
 
 /**
  * Fetches time-bucketed aggregated data for charting.

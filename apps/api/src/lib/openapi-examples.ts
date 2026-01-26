@@ -44,3 +44,10 @@ export const servicesExamples = {
     name: "Too small: expected string to have >=1 characters",
   },
 };
+
+export const dashboardExamples = {
+  serviceOverviewStatsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+    invalidData: { period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"' },
+  },
+};
