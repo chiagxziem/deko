@@ -50,4 +50,17 @@ export const dashboardExamples = {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: { period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"' },
   },
+  serviceTimeseriestatsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+    invalidData: { period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"' },
+  },
+  serviceLogsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+    invalidData: {
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      level: 'Invalid option: expected one of "info"|"warn"|"error"|"debug"',
+      method:
+        'Invalid option: expected one of "GET"|"HEAD"|"POST"|"PUT"|"PATCH"|"DELETE"|"CONNECT"|"OPTIONS"|"TRACE"',
+    },
+  },
 };
