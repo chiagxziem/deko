@@ -1,10 +1,16 @@
+import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { levelEnum, methodEnum } from "../schemas/event.schema";
+
+export const LevelEnumSchema = createSelectSchema(levelEnum);
+export const MethodEnumSchema = createSelectSchema(methodEnum);
+
 export const IngestSchema = z.object({
-  level: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  timestamp: z.number().transform((n) => new Date(n)),
+  level: LevelEnumSchema,
+  timestamp: z.iso.datetime().transform((n) => new Date(n)),
   environment: z.string().min(1),
-  method: z.enum(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"]),
+  method: MethodEnumSchema,
   path: z.string().min(1),
   status: z.number(),
   duration: z.number(),
@@ -15,12 +21,12 @@ export const IngestSchema = z.object({
 
 export const EventSchema = z.object({
   serviceId: z.uuid(),
-  level: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  timestamp: z.date(),
-  receivedAt: z.date(),
+  level: LevelEnumSchema.default("info"),
+  timestamp: z.iso.datetime().transform((n) => new Date(n)),
+  receivedAt: z.iso.datetime().transform((n) => new Date(n)),
   environment: z.string().min(1),
   requestId: z.string().min(1),
-  method: z.enum(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"]),
+  method: MethodEnumSchema,
   path: z.string().min(1),
   status: z.number(),
   duration: z.number(),

@@ -7,18 +7,10 @@ import {
   PeriodType,
 } from "@repo/db/validators/dashboard.validator";
 
-export type Period = "1h" | "24h" | "7d" | "30d";
-export type Granularity = "minute" | "hour" | "day";
-export type Method =
-  | "GET"
-  | "HEAD"
-  | "POST"
-  | "PUT"
-  | "PATCH"
-  | "DELETE"
-  | "CONNECT"
-  | "OPTIONS"
-  | "TRACE";
+export type Period = PeriodType;
+export type Granularity = GranularityType;
+export type Method = MethodType;
+export type Level = LevelType;
 
 export type LogFilters = {
   serviceId: string;

@@ -4,8 +4,8 @@ import { z } from "zod";
 import { service, serviceToken } from "../schemas/service.schema";
 
 export const ServiceSelectSchema = createSelectSchema(service).extend({
-  createdAt: z.number().transform((n) => new Date(n)),
-  updatedAt: z.number().transform((n) => new Date(n)),
+  createdAt: z.iso.datetime().transform((n) => new Date(n)),
+  updatedAt: z.iso.datetime().transform((n) => new Date(n)),
 });
 
 export const ServiceInsertSchema = createInsertSchema(service)
@@ -25,10 +25,10 @@ export const ServiceTokenSelectSchema = createSelectSchema(serviceToken)
   })
   .extend({
     token: z.string().min(1),
-    createdAt: z.number().transform((n) => new Date(n)),
-    updatedAt: z.number().transform((n) => new Date(n)),
-    lastUsedAt: z
-      .number()
+    createdAt: z.iso.datetime().transform((n) => new Date(n)),
+    updatedAt: z.iso.datetime().transform((n) => new Date(n)),
+    lastUsedAt: z.iso
+      .datetime()
       .transform((n) => new Date(n))
       .nullable(),
   });
