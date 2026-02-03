@@ -55,7 +55,7 @@ export const createApp = () => {
     openAPIRouteHandler(app, {
       documentation: {
         info: {
-          title: "Logr API",
+          title: "Deko API",
           description: "The API for an API logging app.",
           version: "0.0.1",
         },
@@ -70,7 +70,7 @@ export const createApp = () => {
     Scalar({
       url: "/api/doc",
       persistAuth: true,
-      pageTitle: "Logr API",
+      pageTitle: "Deko API",
       theme: "saturn",
       hideModels: true,
       defaultHttpClient: {

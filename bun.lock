@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "logr",
+      "name": "deko",
       "devDependencies": {
         "oxfmt": "^0.26.0",
         "oxlint": "^1.41.0",

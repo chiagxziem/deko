@@ -15,14 +15,14 @@ function DashboardPage() {
             className="text-primary underline-offset-4 transition-all duration-200 hover:underline"
             to={"/"}
           >
-            LOGR
+            DEKO
           </Link>{" "}
           DASHBOARD
         </h1>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        This is the dashboard page for Logr. There will be pages for metrics, logs, alerts, and
+        This is the dashboard page for Deko. There will be pages for metrics, logs, alerts, and
         settings, for each project created. More coming soon!
       </p>
 

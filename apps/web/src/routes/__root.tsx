@@ -22,8 +22,8 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
           "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
       },
       {
-        title: "Logr",
-        description: "Logr - An API Observability tool for developers.",
+        title: "Deko",
+        description: "Deko - An API Observability tool for developers.",
       },
     ],
     links: [

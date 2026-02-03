@@ -1,6 +1,6 @@
-# Logr Dashboard
+# Deko Dashboard
 
-Web dashboard application for the Logr application.
+Web dashboard application for the Deko application.
 
 - Built with TanStack Start.
 - Deployed with Docker.
@@ -11,4 +11,4 @@ Web dashboard application for the Logr application.
 2. Run `bun install` to install dependencies.
 3. Run `turbo dev` from the project root to start the dashboard.
 
-See the main project [`README.md`](https://github.com/gozmanthefirst/logr) for more details.
+See the main project [`README.md`](https://github.com/gozmanthefirst/deko) for more details.

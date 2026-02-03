@@ -1,6 +1,6 @@
-# Logr API
+# Deko API
 
-Backend API for the Logr application.
+Backend API for the Deko application.
 
 - Built with Hono.
 - Uses PostgreSQL for data storage.
@@ -12,4 +12,4 @@ Backend API for the Logr application.
 2. Run `bun install` to install dependencies.
 3. Run `turbo dev` from the project root to start the API.
 
-See the main project [`README.md`](https://github.com/gozmanthefirst/logr) for more details.
+See the main project [`README.md`](https://github.com/gozmanthefirst/deko) for more details.

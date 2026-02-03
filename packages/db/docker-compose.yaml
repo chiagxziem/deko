@@ -1,4 +1,4 @@
-name: logr
+name: deko
 
 services:
   pg:
@@ -6,7 +6,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: logr
+      POSTGRES_DB: deko
       POSTGRES_USER: user
       POSTGRES_PASSWORD: secret
     volumes:

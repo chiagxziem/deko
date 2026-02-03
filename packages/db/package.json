@@ -10,7 +10,7 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:delete": "docker compose down -v",
-    "db:psql": "docker exec -it logr-pg psql -U user -d logr",
+    "db:psql": "docker exec -it deko-pg psql -U user -d deko",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
