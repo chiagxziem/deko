@@ -108,7 +108,7 @@ async function sendLog() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-logr-service-token": SERVICE_TOKEN,
+        "x-deko-service-token": SERVICE_TOKEN,
       },
       body: JSON.stringify(log),
     });

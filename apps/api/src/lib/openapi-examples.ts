@@ -26,7 +26,7 @@ export const logsExamples = {
     level: 'Invalid option: expected one of "debug"|"info"|"warn"|"error"',
   },
   invalidServiceToken: {
-    "x-logr-service-token": "Too small: expected string to have >=42 characters",
+    "x-deko-service-token": "Too small: expected string to have >=42 characters",
   },
 };
 

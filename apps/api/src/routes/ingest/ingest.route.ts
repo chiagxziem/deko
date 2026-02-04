@@ -30,7 +30,7 @@ ingest.post(
   validator(
     "header",
     z.object({
-      "x-logr-service-token": z.string().length(32),
+      "x-deko-service-token": z.string().length(32),
     }),
     validationHook,
   ),
@@ -48,7 +48,7 @@ ingest.post(
       );
     }
 
-    const serviceToken = c.req.header("x-logr-service-token");
+    const serviceToken = c.req.header("x-deko-service-token");
     if (!serviceToken) {
       return c.json(
         errorResponse("MISSING_TOKEN", "Service token is required"),
