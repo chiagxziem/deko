@@ -89,6 +89,8 @@ logEventsWorker.on("error", (error) => {
 
 const shutdown = async () => {
   console.log("Shutting down log-events worker...");
+  // Force exit after 10 seconds if graceful shutdown hangs
+  setTimeout(() => process.exit(1), 10000);
   await logEventsWorker.close();
   process.exit(0);
 };
