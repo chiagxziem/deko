@@ -5,10 +5,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "redis:up": "docker compose up -d",
-    "redis:down": "docker compose down",
+    "redis:cli": "docker compose exec redis redis-cli",
     "redis:delete": "docker compose down -v",
-    "redis:cli": "docker compose exec redis redis-cli"
+    "redis:down": "docker compose down",
+    "redis:up": "docker compose up -d"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.10",

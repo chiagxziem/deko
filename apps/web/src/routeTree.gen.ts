@@ -35,8 +35,8 @@ const GuestIndexRoute = GuestIndexRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/dash': typeof DashRouteRouteWithChildren
   '/': typeof GuestIndexRoute
+  '/dash': typeof DashRouteRouteWithChildren
   '/dash/': typeof DashIndexRoute
 }
 export interface FileRoutesByTo {
@@ -52,7 +52,7 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/dash' | '/' | '/dash/'
+  fullPaths: '/' | '/dash' | '/dash/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/dash'
   id: '__root__' | '/_guest' | '/dash' | '/_guest/' | '/dash/'
@@ -75,7 +75,7 @@ declare module '@tanstack/react-router' {
     '/_guest': {
       id: '/_guest'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof GuestRouteRouteImport
       parentRoute: typeof rootRouteImport
     }

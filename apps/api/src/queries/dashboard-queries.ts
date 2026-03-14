@@ -1,4 +1,17 @@
-import { and, asc, db, desc, eq, gte, ilike, like, lt, lte, or, sql } from "@repo/db";
+import {
+  and,
+  asc,
+  db,
+  desc,
+  eq,
+  gte,
+  ilike,
+  like,
+  lt,
+  lte,
+  or,
+  sql,
+} from "@repo/db";
 import { logEvent } from "@repo/db/schemas/event.schema";
 import {
   GranularityType,
@@ -117,8 +130,19 @@ const pathToLikePattern = (path: string): string => {
  * Centralizes filtering logic for logs, counts, and stats.
  */
 const getLogConditions = (filters: LogFilters) => {
-  const { serviceId, level, status, environment, method, path, search, period, from, to, cursor } =
-    filters;
+  const {
+    serviceId,
+    level,
+    status,
+    environment,
+    method,
+    path,
+    search,
+    period,
+    from,
+    to,
+    cursor,
+  } = filters;
 
   const conditions = [eq(logEvent.serviceId, serviceId)];
 
@@ -140,7 +164,10 @@ const getLogConditions = (filters: LogFilters) => {
   if (search) {
     const searchPattern = `%${search}%`;
     conditions.push(
-      or(ilike(logEvent.path, searchPattern), ilike(logEvent.message, searchPattern)) ?? sql`true`,
+      or(
+        ilike(logEvent.path, searchPattern),
+        ilike(logEvent.message, searchPattern),
+      ) ?? sql`true`,
     );
   }
 
@@ -164,7 +191,10 @@ const getLogConditions = (filters: LogFilters) => {
     conditions.push(
       or(
         lt(logEvent.timestamp, cursor.timestamp),
-        and(eq(logEvent.timestamp, cursor.timestamp), lt(logEvent.id, cursor.id)),
+        and(
+          eq(logEvent.timestamp, cursor.timestamp),
+          lt(logEvent.id, cursor.id),
+        ),
       ) ?? sql`true`,
     );
   }
@@ -192,7 +222,9 @@ export const getServiceLogs = async (filters: LogFilters) => {
  * Gets the exact count of logs matching the filters.
  * Used for totalEstimate in pagination.
  */
-export const getServiceLogsCount = async (filters: LogFilters): Promise<number> => {
+export const getServiceLogsCount = async (
+  filters: LogFilters,
+): Promise<number> => {
   const { conditions } = getLogConditions(filters);
 
   const result = await db
@@ -232,7 +264,10 @@ export const getServiceOverviewStats = async (filters: LogFilters) => {
 
   return {
     ...stats,
-    errorRate: stats.totalRequests > 0 ? (stats.errorCount / stats.totalRequests) * 100 : 0,
+    errorRate:
+      stats.totalRequests > 0
+        ? (stats.errorCount / stats.totalRequests) * 100
+        : 0,
     period: {
       from: periodStart ?? new Date(),
       to: periodEnd ?? new Date(),
@@ -258,7 +293,11 @@ export const getLogTimeseries = async (filters: TimeseriesFilters) => {
   // Use provided granularity or auto-select based on period
   const bucketSize = granularity ?? getDefaultGranularity(period);
   const bucketInterval =
-    bucketSize === "minute" ? "1 minute" : bucketSize === "hour" ? "1 hour" : "1 day";
+    bucketSize === "minute"
+      ? "1 minute"
+      : bucketSize === "hour"
+        ? "1 hour"
+        : "1 day";
 
   // Determine time range
   let startTime: Date;
@@ -314,7 +353,11 @@ export const getLogTimeseries = async (filters: TimeseriesFilters) => {
  * @param timestamp - The log timestamp (required for hypertable lookup)
  * @returns The log event or null if not found
  */
-export const getSingleLog = async (serviceId: string, logId: string, timestamp: Date) => {
+export const getSingleLog = async (
+  serviceId: string,
+  logId: string,
+  timestamp: Date,
+) => {
   const result = await db
     .select()
     .from(logEvent)

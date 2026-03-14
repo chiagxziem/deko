@@ -1,5 +1,14 @@
 import { describeRoute } from "hono-openapi";
 
+import {
+  LogLevelBreakdownSchema,
+  ServiceLogListSchema,
+  ServiceLogSchema,
+  ServiceOverviewStatsSchema,
+  ServiceTimeseriesStatsSchema,
+  StatusCodeBreakdownSchema,
+} from "@repo/db/validators/dashboard.validator";
+
 import HttpStatusCodes from "@/lib/http-status-codes";
 import {
   createErrorResponse,
@@ -10,14 +19,6 @@ import {
   getErrDetailsFromErrFields,
 } from "@/lib/openapi";
 import { dashboardExamples } from "@/lib/openapi-examples";
-import {
-  LogLevelBreakdownSchema,
-  ServiceLogListSchema,
-  ServiceLogSchema,
-  ServiceOverviewStatsSchema,
-  ServiceTimeseriesStatsSchema,
-  StatusCodeBreakdownSchema,
-} from "@repo/db/validators/dashboard.validator";
 
 const tags = ["Dashboard"];
 
@@ -25,15 +26,20 @@ export const getServiceOverviewStatsDoc = describeRoute({
   description: "Get overview statistics for a service",
   tags,
   responses: {
-    [HttpStatusCodes.OK]: createSuccessResponse("Service overview statistics retrieved", {
-      details: "Service overview statistics retrieved successfully",
-      dataSchema: ServiceOverviewStatsSchema,
-    }),
+    [HttpStatusCodes.OK]: createSuccessResponse(
+      "Service overview statistics retrieved",
+      {
+        details: "Service overview statistics retrieved successfully",
+        dataSchema: ServiceOverviewStatsSchema,
+      },
+    ),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidUUID: {
         summary: "Invalid service ID",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.serviceOverviewStatsValErrs.idErrors),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.serviceOverviewStatsValErrs.idErrors,
+        ),
         fields: dashboardExamples.serviceOverviewStatsValErrs.idErrors,
       },
       validationError: {
@@ -45,10 +51,13 @@ export const getServiceOverviewStatsDoc = describeRoute({
         fields: dashboardExamples.serviceOverviewStatsValErrs.invalidData,
       },
     }),
-    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse("Service not found", {
-      code: "NOT_FOUND",
-      details: "Service not found",
-    }),
+    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
+      "Service not found",
+      {
+        code: "NOT_FOUND",
+        details: "Service not found",
+      },
+    ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
@@ -58,10 +67,13 @@ export const getServiceTimeseriesStatsDoc = describeRoute({
   description: "Get timeseries statistics for a service",
   tags,
   responses: {
-    [HttpStatusCodes.OK]: createSuccessResponse("Service timeseries statistics retrieved", {
-      details: "Service timeseries statistics retrieved successfully",
-      dataSchema: ServiceTimeseriesStatsSchema,
-    }),
+    [HttpStatusCodes.OK]: createSuccessResponse(
+      "Service timeseries statistics retrieved",
+      {
+        details: "Service timeseries statistics retrieved successfully",
+        dataSchema: ServiceTimeseriesStatsSchema,
+      },
+    ),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidUUID: {
         summary: "Invalid service ID",
@@ -85,10 +97,13 @@ export const getServiceTimeseriesStatsDoc = describeRoute({
         details: "Invalid metric requested",
       },
     }),
-    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse("Service not found", {
-      code: "NOT_FOUND",
-      details: "Service not found",
-    }),
+    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
+      "Service not found",
+      {
+        code: "NOT_FOUND",
+        details: "Service not found",
+      },
+    ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
@@ -106,20 +121,27 @@ export const getServiceLogsDoc = describeRoute({
       invalidUUID: {
         summary: "Invalid service ID",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.serviceLogsValErrs.idErrors),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.serviceLogsValErrs.idErrors,
+        ),
         fields: dashboardExamples.serviceLogsValErrs.idErrors,
       },
       validationError: {
         summary: "Invalid request data",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.serviceLogsValErrs.invalidData),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.serviceLogsValErrs.invalidData,
+        ),
         fields: dashboardExamples.serviceLogsValErrs.invalidData,
       },
     }),
-    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse("Service not found", {
-      code: "NOT_FOUND",
-      details: "Service not found",
-    }),
+    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
+      "Service not found",
+      {
+        code: "NOT_FOUND",
+        details: "Service not found",
+      },
+    ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
@@ -137,13 +159,17 @@ export const getSingleLogDoc = describeRoute({
       invalidUUID: {
         summary: "Invalid service ID",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.singleServiceLogValErrs.idErrors),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.singleServiceLogValErrs.idErrors,
+        ),
         fields: dashboardExamples.singleServiceLogValErrs.idErrors,
       },
       validationError: {
         summary: "Invalid request data",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.singleServiceLogValErrs.invalidData),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.singleServiceLogValErrs.invalidData,
+        ),
         fields: dashboardExamples.singleServiceLogValErrs.invalidData,
       },
     }),
@@ -168,21 +194,28 @@ export const getStatusCodeBreakdownDoc = describeRoute({
   description: "Get status code breakdown for a service",
   tags,
   responses: {
-    [HttpStatusCodes.OK]: createSuccessResponse("Status code breakdown retrieved", {
-      details: "Status code breakdown retrieved successfully",
-      dataSchema: StatusCodeBreakdownSchema,
-    }),
+    [HttpStatusCodes.OK]: createSuccessResponse(
+      "Status code breakdown retrieved",
+      {
+        details: "Status code breakdown retrieved successfully",
+        dataSchema: StatusCodeBreakdownSchema,
+      },
+    ),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidUUID: {
         summary: "Invalid service ID",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.breakdownValErrs.idErrors),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.breakdownValErrs.idErrors,
+        ),
         fields: dashboardExamples.breakdownValErrs.idErrors,
       },
       validationError: {
         summary: "Invalid request data",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.breakdownValErrs.invalidData),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.breakdownValErrs.invalidData,
+        ),
         fields: dashboardExamples.breakdownValErrs.invalidData,
       },
     }),
@@ -202,21 +235,28 @@ export const getLogLevelBreakdownDoc = describeRoute({
   description: "Get log level breakdown for a service",
   tags,
   responses: {
-    [HttpStatusCodes.OK]: createSuccessResponse("Log level breakdown retrieved", {
-      details: "Log level breakdown retrieved successfully",
-      dataSchema: LogLevelBreakdownSchema,
-    }),
+    [HttpStatusCodes.OK]: createSuccessResponse(
+      "Log level breakdown retrieved",
+      {
+        details: "Log level breakdown retrieved successfully",
+        dataSchema: LogLevelBreakdownSchema,
+      },
+    ),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidUUID: {
         summary: "Invalid service ID",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.breakdownValErrs.idErrors),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.breakdownValErrs.idErrors,
+        ),
         fields: dashboardExamples.breakdownValErrs.idErrors,
       },
       validationError: {
         summary: "Invalid request data",
         code: "INVALID_DATA",
-        details: getErrDetailsFromErrFields(dashboardExamples.breakdownValErrs.invalidData),
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.breakdownValErrs.invalidData,
+        ),
         fields: dashboardExamples.breakdownValErrs.invalidData,
       },
     }),

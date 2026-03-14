@@ -2,8 +2,8 @@
   "name": "@repo/worker",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
     "build": "bun build --compile --minify --sourcemap src/index.ts --outfile worker-exe",
+    "dev": "bun run --hot src/index.ts",
     "start": "./worker-exe"
   },
   "dependencies": {

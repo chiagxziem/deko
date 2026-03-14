@@ -22,11 +22,16 @@ function DashboardPage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        This is the dashboard page for Deko. There will be pages for metrics, logs, alerts, and
-        settings, for each project created. More coming soon!
+        This is the dashboard page for Deko. There will be pages for metrics,
+        logs, alerts, and settings, for each project created. More coming soon!
       </p>
 
-      <Button className="px-0" nativeButton={false} render={<Link to={"/"} />} variant="link">
+      <Button
+        className="px-0"
+        nativeButton={false}
+        render={<Link to={"/"} />}
+        variant="link"
+      >
         Go to Home
       </Button>
     </main>

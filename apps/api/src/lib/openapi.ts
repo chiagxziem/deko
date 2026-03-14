@@ -43,7 +43,9 @@ export const createSuccessResponse = <T extends z.ZodType>(
     description,
     content: {
       "application/json": {
-        schema: resolver(createSuccessResponseSchema(schema.details, schema.dataSchema)),
+        schema: resolver(
+          createSuccessResponseSchema(schema.details, schema.dataSchema),
+        ),
       },
     },
   };
@@ -139,7 +141,9 @@ export const createRateLimitErrorResponse = (details?: string) => {
               status: "error",
               error: {
                 code: "TOO_MANY_REQUESTS",
-                details: details ?? "Too many requests have been made. Please try again later.",
+                details:
+                  details ??
+                  "Too many requests have been made. Please try again later.",
                 fields: {},
               },
             },

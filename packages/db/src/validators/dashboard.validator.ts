@@ -106,7 +106,9 @@ export type MethodType = z.infer<typeof MethodEnumSchema>;
 export type PeriodType = z.infer<typeof PeriodEnumSchema>;
 export type GranularityType = z.infer<typeof GranularityEnumSchema>;
 export type ServiceOverviewStats = z.infer<typeof ServiceOverviewStatsSchema>;
-export type ServiceTimeseriesStats = z.infer<typeof ServiceTimeseriesStatsSchema>;
+export type ServiceTimeseriesStats = z.infer<
+  typeof ServiceTimeseriesStatsSchema
+>;
 export type ServiceLogList = z.infer<typeof ServiceLogListSchema>;
 export type ServiceLog = z.infer<typeof ServiceLogSchema>;
 export type StatusCodeBreakdown = z.infer<typeof StatusCodeBreakdownSchema>;

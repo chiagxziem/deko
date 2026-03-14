@@ -26,7 +26,8 @@ export const logsExamples = {
     level: 'Invalid option: expected one of "debug"|"info"|"warn"|"error"',
   },
   invalidServiceToken: {
-    "x-deko-service-token": "Too small: expected string to have >=42 characters",
+    "x-deko-service-token":
+      "Too small: expected string to have >=42 characters",
   },
 };
 
@@ -48,11 +49,15 @@ export const servicesExamples = {
 export const dashboardExamples = {
   serviceOverviewStatsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
-    invalidData: { period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"' },
+    invalidData: {
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+    },
   },
   serviceTimeseriestatsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
-    invalidData: { period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"' },
+    invalidData: {
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+    },
   },
   serviceLogsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
@@ -71,6 +76,8 @@ export const dashboardExamples = {
   },
   breakdownValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
-    invalidData: { period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"' },
+    invalidData: {
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+    },
   },
 };

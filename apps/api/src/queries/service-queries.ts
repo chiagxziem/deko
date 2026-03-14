@@ -1,8 +1,9 @@
 import slugify from "slugify";
 
-import { hashToken } from "@/lib/encryption";
 import { and, db, eq } from "@repo/db";
 import { service, serviceToken } from "@repo/db/schemas/service.schema";
+
+import { hashToken } from "@/lib/encryption";
 
 /**
  * Get all services
@@ -88,7 +89,13 @@ export const getSingleService = async (serviceId: string) => {
  * @param serviceId - The ID of the service
  * @returns The updated service with its tokens
  */
-export const updateService = async ({ name, serviceId }: { name: string; serviceId: string }) => {
+export const updateService = async ({
+  name,
+  serviceId,
+}: {
+  name: string;
+  serviceId: string;
+}) => {
   const [updatedService] = await db
     .update(service)
     .set({
@@ -117,7 +124,10 @@ export const updateService = async ({ name, serviceId }: { name: string; service
  * @returns The deleted service
  */
 export const deleteService = async ({ serviceId }: { serviceId: string }) => {
-  const [deletedService] = await db.delete(service).where(eq(service.id, serviceId)).returning();
+  const [deletedService] = await db
+    .delete(service)
+    .where(eq(service.id, serviceId))
+    .returning();
 
   if (!deletedService) {
     return undefined;
@@ -164,7 +174,10 @@ export const createServiceToken = async ({
  * @param serviceId - The ID of the service
  * @returns The service token
  */
-export const getSingleServiceToken = async (tokenId: string, serviceId: string) => {
+export const getSingleServiceToken = async (
+  tokenId: string,
+  serviceId: string,
+) => {
   const singleServiceToken = await db.query.serviceToken.findFirst({
     where: (st) => and(eq(st.serviceId, serviceId), eq(st.id, tokenId)),
   });
@@ -178,7 +191,13 @@ export const getSingleServiceToken = async (tokenId: string, serviceId: string) 
  * @param tokenId - The ID of the token
  * @returns The updated service token
  */
-export const updateServiceToken = async ({ name, tokenId }: { name: string; tokenId: string }) => {
+export const updateServiceToken = async ({
+  name,
+  tokenId,
+}: {
+  name: string;
+  tokenId: string;
+}) => {
   const [updatedServiceToken] = await db
     .update(serviceToken)
     .set({
@@ -205,7 +224,9 @@ export const deleteServiceToken = async ({
 }) => {
   const [deletedServiceToken] = await db
     .delete(serviceToken)
-    .where(and(eq(serviceToken.id, tokenId), eq(serviceToken.serviceId, serviceId)))
+    .where(
+      and(eq(serviceToken.id, tokenId), eq(serviceToken.serviceId, serviceId)),
+    )
     .returning();
 
   if (!deletedServiceToken) {

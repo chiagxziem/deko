@@ -1,6 +1,16 @@
 import { validator } from "hono-openapi";
 import { z } from "zod";
 
+import {
+  GranularityEnumSchema,
+  LevelEnumSchema,
+  MethodEnumSchema,
+  PeriodEnumSchema,
+  ServiceLogList,
+  ServiceOverviewStats,
+  ServiceTimeseriesStats,
+} from "@repo/db/validators/dashboard.validator";
+
 import { createRouter } from "@/app";
 import HttpStatusCodes from "@/lib/http-status-codes";
 import { errorResponse, successResponse } from "@/lib/utils";
@@ -16,15 +26,6 @@ import {
   getStatusCodeBreakdown,
 } from "@/queries/dashboard-queries";
 import { getSingleService } from "@/queries/service-queries";
-import {
-  GranularityEnumSchema,
-  LevelEnumSchema,
-  MethodEnumSchema,
-  PeriodEnumSchema,
-  ServiceLogList,
-  ServiceOverviewStats,
-  ServiceTimeseriesStats,
-} from "@repo/db/validators/dashboard.validator";
 
 import {
   getLogLevelBreakdownDoc,
@@ -57,11 +58,18 @@ dashboard.get(
     // ensure the service exists
     const service = await getSingleService(serviceId);
     if (!service) {
-      return c.json(errorResponse("NOT_FOUND", "Service not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     // Get current period stats
-    const serviceOverviewStats = await getServiceOverviewStats({ serviceId, period, environment });
+    const serviceOverviewStats = await getServiceOverviewStats({
+      serviceId,
+      period,
+      environment,
+    });
 
     const defaultOverviewStats: ServiceOverviewStats = {
       totalRequests: 0,
@@ -85,7 +93,10 @@ dashboard.get(
     // return sensible default if there's no log in service yet
     if (serviceOverviewStats.totalRequests === 0) {
       return c.json(
-        successResponse(defaultOverviewStats, "Service overview statistics retrieved successfully"),
+        successResponse(
+          defaultOverviewStats,
+          "Service overview statistics retrieved successfully",
+        ),
         HttpStatusCodes.OK,
       );
     }
@@ -108,19 +119,22 @@ dashboard.get(
       comparison: {
         totalRequestsChange:
           prevPeriodOverviewStats.totalRequests > 0
-            ? ((serviceOverviewStats.totalRequests - prevPeriodOverviewStats.totalRequests) /
+            ? ((serviceOverviewStats.totalRequests -
+                prevPeriodOverviewStats.totalRequests) /
                 prevPeriodOverviewStats.totalRequests) *
               100
             : null,
         errorRateChange:
           prevPeriodOverviewStats.errorRate > 0
-            ? ((serviceOverviewStats.errorRate - prevPeriodOverviewStats.errorRate) /
+            ? ((serviceOverviewStats.errorRate -
+                prevPeriodOverviewStats.errorRate) /
                 prevPeriodOverviewStats.errorRate) *
               100
             : null,
         avgDurationChange:
           prevPeriodOverviewStats.avgDuration > 0
-            ? ((serviceOverviewStats.avgDuration - prevPeriodOverviewStats.avgDuration) /
+            ? ((serviceOverviewStats.avgDuration -
+                prevPeriodOverviewStats.avgDuration) /
                 prevPeriodOverviewStats.avgDuration) *
               100
             : null,
@@ -128,7 +142,10 @@ dashboard.get(
     };
 
     return c.json(
-      successResponse(response, "Service overview statistics retrieved successfully"),
+      successResponse(
+        response,
+        "Service overview statistics retrieved successfully",
+      ),
       HttpStatusCodes.OK,
     );
   },
@@ -146,7 +163,9 @@ dashboard.get(
       granularity: GranularityEnumSchema.optional(),
       metrics: z
         .string()
-        .default("requests,errors,avg_duration,p50_duration,p95_duration,p99_duration")
+        .default(
+          "requests,errors,avg_duration,p50_duration,p95_duration,p99_duration",
+        )
         .describe(
           "Comma separated list of metrics to retrieve. Valid values: requests, errors, avg_duration, p50_duration, p95_duration, p99_duration",
         ),
@@ -160,7 +179,10 @@ dashboard.get(
     // ensure the service exists
     const service = await getSingleService(serviceId);
     if (!service) {
-      return c.json(errorResponse("NOT_FOUND", "Service not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     // if there's no valid metrics, return an error
@@ -189,12 +211,22 @@ dashboard.get(
       granularity: serviceTimeseries.granularity,
       buckets: serviceTimeseries.buckets.map((bucket) => ({
         timestamp: bucket.bucket,
-        requests: metricsArray.includes("requests") ? bucket.requests : undefined,
+        requests: metricsArray.includes("requests")
+          ? bucket.requests
+          : undefined,
         errors: metricsArray.includes("errors") ? bucket.errors : undefined,
-        avgDuration: metricsArray.includes("avg_duration") ? bucket.avg_duration : undefined,
-        p50Duration: metricsArray.includes("p50_duration") ? bucket.p50_duration : undefined,
-        p95Duration: metricsArray.includes("p95_duration") ? bucket.p95_duration : undefined,
-        p99Duration: metricsArray.includes("p99_duration") ? bucket.p99_duration : undefined,
+        avgDuration: metricsArray.includes("avg_duration")
+          ? bucket.avg_duration
+          : undefined,
+        p50Duration: metricsArray.includes("p50_duration")
+          ? bucket.p50_duration
+          : undefined,
+        p95Duration: metricsArray.includes("p95_duration")
+          ? bucket.p95_duration
+          : undefined,
+        p99Duration: metricsArray.includes("p99_duration")
+          ? bucket.p99_duration
+          : undefined,
       })),
     };
 
@@ -238,13 +270,27 @@ dashboard.get(
   ),
   async (c) => {
     const { serviceId } = c.req.valid("param");
-    const { period, level, status, environment, method, path, to, from, search, cursor, limit } =
-      c.req.valid("query");
+    const {
+      period,
+      level,
+      status,
+      environment,
+      method,
+      path,
+      to,
+      from,
+      search,
+      cursor,
+      limit,
+    } = c.req.valid("query");
 
     // ensure the service exists
     const service = await getSingleService(serviceId);
     if (!service) {
-      return c.json(errorResponse("NOT_FOUND", "Service not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     let cursorTimestamp: number | undefined;
@@ -255,7 +301,9 @@ dashboard.get(
       try {
         // Handle potential space vs plus issue in base64 from URL
         const normalizedCursor = cursor.replace(/ /g, "+");
-        const decoded = Buffer.from(normalizedCursor, "base64").toString("utf-8");
+        const decoded = Buffer.from(normalizedCursor, "base64").toString(
+          "utf-8",
+        );
         const [timestampStr, idStr] = decoded.split(":");
         if (!timestampStr || !idStr) {
           throw new Error("Invalid cursor format");
@@ -338,7 +386,11 @@ dashboard.get(
 dashboard.get(
   "/:serviceId/logs/:logId",
   getSingleLogDoc,
-  validator("param", z.object({ serviceId: z.uuid(), logId: z.uuid() }), validationHook),
+  validator(
+    "param",
+    z.object({ serviceId: z.uuid(), logId: z.uuid() }),
+    validationHook,
+  ),
   validator(
     "query",
     z.object({
@@ -353,13 +405,19 @@ dashboard.get(
     // ensure the service exists
     const service = await getSingleService(serviceId);
     if (!service) {
-      return c.json(errorResponse("NOT_FOUND", "Service not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     // ensure the log exists
     const log = await getSingleLog(serviceId, logId, new Date(timestamp));
     if (!log) {
-      return c.json(errorResponse("NOT_FOUND", "Log not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Log not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     return c.json(
@@ -386,7 +444,9 @@ dashboard.get(
     z.object({
       period: PeriodEnumSchema.default("24h"),
       environment: z.string().optional(),
-      groupBy: z.union([z.literal("category"), z.literal("code")]).default("category"),
+      groupBy: z
+        .union([z.literal("category"), z.literal("code")])
+        .default("category"),
     }),
     validationHook,
   ),
@@ -397,7 +457,10 @@ dashboard.get(
     // ensure the service exists
     const service = await getSingleService(serviceId);
     if (!service) {
-      return c.json(errorResponse("NOT_FOUND", "Service not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     const breakdown = await getStatusCodeBreakdown({
@@ -408,7 +471,10 @@ dashboard.get(
     });
 
     return c.json(
-      successResponse(breakdown, "Status code breakdown retrieved successfully"),
+      successResponse(
+        breakdown,
+        "Status code breakdown retrieved successfully",
+      ),
       HttpStatusCodes.OK,
     );
   },
@@ -434,7 +500,10 @@ dashboard.get(
     // ensure the service exists
     const service = await getSingleService(serviceId);
     if (!service) {
-      return c.json(errorResponse("NOT_FOUND", "Service not found"), HttpStatusCodes.NOT_FOUND);
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
     }
 
     const breakdown = await getLogLevelBreakdown({

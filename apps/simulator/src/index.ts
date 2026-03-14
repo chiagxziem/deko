@@ -58,8 +58,8 @@ const methods: Record<string, string[]> = {
 };
 
 const commonStatuses = [
-  200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 201, 201, 201, 201, 201, 204, 204, 400, 401,
-  404, 500,
+  200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 201, 201, 201, 201, 201,
+  204, 204, 400, 401, 404, 500,
 ];
 
 function getRandom<T>(arr: T[]): T {
@@ -114,10 +114,15 @@ async function sendLog() {
     });
 
     if (response.ok) {
-      console.log(`✅ Log sent: ${log.method} ${log.path} (${log.status}) - ${log.level}`);
+      console.log(
+        `✅ Log sent: ${log.method} ${log.path} (${log.status}) - ${log.level}`,
+      );
     } else {
       const error = await response.text();
-      console.error(`❌ Failed to send log: ${response.status} ${response.statusText}`, error);
+      console.error(
+        `❌ Failed to send log: ${response.status} ${response.statusText}`,
+        error,
+      );
     }
   } catch (err) {
     console.error("❌ Error sending log:", err);
