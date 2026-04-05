@@ -33,6 +33,20 @@ export const getServiceByToken = async (token: string) => {
 };
 
 /**
+ * Update last-used timestamp for a service token after successful token auth
+ */
+export const touchServiceTokenLastUsed = async (token: string) => {
+  const hashedToken = hashToken(token);
+
+  await db
+    .update(serviceToken)
+    .set({
+      lastUsedAt: new Date(),
+    })
+    .where(eq(serviceToken.hashedToken, hashedToken));
+};
+
+/**
  * Create a new service
  * @param name - Name of the service
  * @returns The created service

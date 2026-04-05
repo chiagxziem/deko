@@ -4,10 +4,11 @@ import { getConnInfo } from "hono/bun";
 import { z } from "zod";
 
 import { type Event, IngestSchema } from "@repo/db/validators/log.validator";
-import { logEventsQueue, redisClient as redis } from "@repo/redis";
+import { logEventsQueue } from "@repo/redis";
 
 import { createRouter } from "@/app";
 import HttpStatusCodes from "@/lib/http-status-codes";
+import { checkAndIncrementSlidingWindowBatch } from "@/lib/rate-limit";
 import {
   errorResponse,
   extractTraceId,
@@ -18,7 +19,10 @@ import {
 import { ingestRateLimit } from "@/middleware/ingest-rate-limit";
 import { maxBodySize } from "@/middleware/max-body-size";
 import { validationHook } from "@/middleware/validation-hook";
-import { getServiceByToken } from "@/queries/service-queries";
+import {
+  getServiceByToken,
+  touchServiceTokenLastUsed,
+} from "@/queries/service-queries";
 
 import { ingestLogDoc } from "./ingest.docs";
 
@@ -65,27 +69,25 @@ ingest.post(
     }
 
     // --- START EVENT QUOTA CHECK ---
-    // only the per-minute event quota is checked here to prevent connection spam
-    // the per-second request limit is checked in the ingest rate limit middleware
-    // this implements the "10,000 events per minute" logic accurately by counting batch size
+    // per-minute (10k events) event rate-limit since the batch size is known
+    // an atomic Redis script helper is used to ensure transaction isolation
+    // and prevent race conditions
 
     const keyMin = `ingest-rate-limit:${serviceToken}:min`;
     const now = Date.now();
     const limitMin = 10_000;
+    const windowMs = 60_000;
 
     try {
-      await redis.send("MULTI", []);
-      await redis.send("ZREMRANGEBYSCORE", [
+      const quotaResult = await checkAndIncrementSlidingWindowBatch(
         keyMin,
-        "0",
-        (now - 60_000).toString(),
-      ]);
-      await redis.send("ZCARD", [keyMin]);
+        now,
+        limitMin,
+        windowMs,
+        logs.length,
+      );
 
-      const quotaResults = (await redis.send("EXEC", [])) as any[];
-      const currentEventCount = quotaResults[1] ?? 0;
-
-      if (currentEventCount + logs.length > limitMin) {
+      if (!quotaResult.allowed) {
         return c.json(
           errorResponse(
             "TOO_MANY_REQUESTS",
@@ -94,27 +96,6 @@ ingest.post(
           HttpStatusCodes.TOO_MANY_REQUESTS,
         );
       }
-
-      // add each event from the batch into the sliding window
-      // We collect all promises to pipeline the commands to Redis
-      const batchPromises: Promise<unknown>[] = [];
-      batchPromises.push(redis.send("MULTI", []));
-
-      const randomSuffix = Math.random().toString(36).substring(2, 5);
-
-      for (let i = 0; i < logs.length; i++) {
-        // we use a slightly offset random member for each log in the batch
-        const eventMember = `${now}-${i}-${randomSuffix}`;
-        batchPromises.push(
-          redis.send("ZADD", [keyMin, now.toString(), eventMember]),
-        );
-      }
-
-      batchPromises.push(redis.send("PEXPIRE", [keyMin, "60000"]));
-      batchPromises.push(redis.send("EXEC", []));
-
-      // Resolve all "QUEUED" responses and the final EXEC in one go
-      await Promise.all(batchPromises);
     } catch (err) {
       console.error("Ingest Event Quota Check Error:", err);
       return c.json(
@@ -133,6 +114,16 @@ ingest.post(
       return c.json(
         errorResponse("INVALID_TOKEN", "Invalid or non-existing service token"),
         HttpStatusCodes.UNAUTHORIZED,
+      );
+    }
+
+    // update service token updatedAt
+    try {
+      await touchServiceTokenLastUsed(serviceToken);
+    } catch (touchErr) {
+      console.warn(
+        "Failed to update service token last-used timestamp:",
+        touchErr,
       );
     }
 

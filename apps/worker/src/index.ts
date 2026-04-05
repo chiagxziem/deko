@@ -8,15 +8,33 @@ import env from "@/lib/env";
 
 import { scrubPII } from "./lib/scrub";
 
+// Normalize queue timestamp-like values into ISO strings so they match the
+// EventSchema input contract
+const toIsoString = (value: unknown, fieldName: "timestamp" | "receivedAt") => {
+  const date = value instanceof Date ? value : new Date(String(value));
+
+  if (Number.isNaN(date.getTime())) {
+    throw new UnrecoverableError(
+      `Validation of event failed: invalid ${fieldName} value`,
+    );
+  }
+
+  return date.toISOString();
+};
+
 const logEventsWorker = new Worker<Event, void>(
   "log-events",
   async (job) => {
-    // Re-validate event
-    const eventValidation = EventSchema.safeParse({
+    // Normalize timestamp fields before validation because EventSchema expects ISO
+    // datetime input and transforms it to Date internally
+    const normalizedJobData = {
       ...job.data,
-      timestamp: new Date(job.data.timestamp),
-      receivedAt: new Date(job.data.receivedAt),
-    });
+      timestamp: toIsoString(job.data.timestamp, "timestamp"),
+      receivedAt: toIsoString(job.data.receivedAt, "receivedAt"),
+    };
+
+    // re-validate event from queue so worker-side storage stays schema-safe
+    const eventValidation = EventSchema.safeParse(normalizedJobData);
 
     if (!eventValidation.success) {
       const errorMsg = `Validation of event ${job.data.requestId} failed!`;

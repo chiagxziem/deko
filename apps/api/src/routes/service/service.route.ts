@@ -38,6 +38,38 @@ import {
 
 const serviceRouter = createRouter();
 
+// non-reversible masking of token
+const maskTokenPreview = (token: string): string => {
+  const visibleLength = 4;
+  const visiblePart = token.slice(-visibleLength);
+  return `${"*".repeat(Math.max(0, token.length - visibleLength))}${visiblePart}`;
+};
+
+// after creation, API responses provide metadata + masked tokens only.
+// We keep encrypted token at rest for compatibility, but never re-emit plaintext tokens
+// because repeated secret retrieval materially increases leak risk in self-hosted setups.
+const toPublicToken = (tokenRow: {
+  id: string;
+  serviceId: string;
+  name: string;
+  lastUsedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  encryptedToken: string;
+}) => {
+  const decrypted = decrypt(tokenRow.encryptedToken);
+
+  return {
+    id: tokenRow.id,
+    serviceId: tokenRow.serviceId,
+    name: tokenRow.name,
+    lastUsedAt: tokenRow.lastUsedAt,
+    createdAt: tokenRow.createdAt,
+    updatedAt: tokenRow.updatedAt,
+    tokenPreview: maskTokenPreview(decrypted),
+  };
+};
+
 // Get all services
 serviceRouter.get("/", getServicesDoc, async (c) => {
   const services = await getServices();
@@ -82,15 +114,9 @@ serviceRouter.get(
       );
     }
 
-    // Decrypt encrypted service tokens
-    const serviceTokens = service.tokens.map((pt) => {
-      const { encryptedToken, hashedToken: _h, ...token } = pt;
-
-      return {
-        ...token,
-        token: decrypt(encryptedToken),
-      };
-    });
+    // masked tokens are returned instead of plaintext tokens
+    // plaintext tokens are only shown once on creation
+    const serviceTokens = service.tokens.map((pt) => toPublicToken(pt));
 
     const serviceWithDecryptedTokens = {
       ...service,
@@ -127,15 +153,8 @@ serviceRouter.patch(
       );
     }
 
-    // Decrypt encrypted service tokens
-    const serviceTokens = service.tokens.map((pt) => {
-      const { encryptedToken, hashedToken: _h, ...token } = pt;
-
-      return {
-        ...token,
-        token: decrypt(encryptedToken),
-      };
-    });
+    // masked tokens are returned instead of plaintext tokens
+    const serviceTokens = service.tokens.map((pt) => toPublicToken(pt));
 
     const serviceWithDecryptedTokens = {
       ...service,
@@ -166,15 +185,10 @@ serviceRouter.patch(
       );
     }
 
-    // Decrypt encrypted service tokens
-    const updatedServiceTokens = updatedService.tokens.map((pt) => {
-      const { encryptedToken, hashedToken: _h, ...token } = pt;
-
-      return {
-        ...token,
-        token: decrypt(encryptedToken),
-      };
-    });
+    // masked tokens are returned instead of plaintext tokens
+    const updatedServiceTokens = updatedService.tokens.map((pt) =>
+      toPublicToken(pt),
+    );
 
     const updatedServiceWithDecryptedTokens = {
       ...updatedService,
@@ -315,17 +329,8 @@ serviceRouter.patch(
       );
     }
 
-    // Decrypt token str
-    const {
-      encryptedToken,
-      hashedToken: _h2,
-      ...newServiceToken
-    } = encryptedServiceToken;
-
-    const decryptedServiceToken = {
-      ...newServiceToken,
-      token: decrypt(encryptedToken),
-    };
+    // masked tokens are returned instead of plaintext tokens
+    const decryptedServiceToken = toPublicToken(encryptedServiceToken);
 
     // Return success if the name didn't change
     if (name === decryptedServiceToken.name) {
@@ -348,10 +353,10 @@ serviceRouter.patch(
       tokenId,
     });
 
-    // Decrypt token str of updated service token
+    // masked tokens are returned instead of plaintext tokens
     const updatedDecryptedServiceToken = {
       ...updatedServiceToken,
-      token: decrypt(updatedEncryptedToken),
+      tokenPreview: maskTokenPreview(decrypt(updatedEncryptedToken)),
     };
 
     return c.json(

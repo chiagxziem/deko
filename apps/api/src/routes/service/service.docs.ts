@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   ServiceSelectSchema,
+  ServiceTokenPublicSchema,
   ServiceTokenSelectSchema,
 } from "@repo/db/validators/service.validator";
 
@@ -62,7 +63,7 @@ export const getServiceDoc = describeRoute({
     [HttpStatusCodes.OK]: createSuccessResponse("Service retrieved", {
       details: "Service retrieved successfully",
       dataSchema: ServiceSelectSchema.extend({
-        tokens: z.array(ServiceTokenSelectSchema),
+        tokens: z.array(ServiceTokenPublicSchema),
       }),
     }),
     [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
@@ -193,7 +194,7 @@ export const updateServiceTokenDoc = describeRoute({
   responses: {
     [HttpStatusCodes.OK]: createSuccessResponse("Service token updated", {
       details: "Service token updated successfully",
-      dataSchema: ServiceTokenSelectSchema,
+      dataSchema: ServiceTokenPublicSchema,
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidServiceOrTokenID: {

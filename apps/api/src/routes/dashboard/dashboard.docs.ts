@@ -134,6 +134,11 @@ export const getServiceLogsDoc = describeRoute({
         ),
         fields: dashboardExamples.serviceLogsValErrs.invalidData,
       },
+      invalidCursor: {
+        summary: "Invalid cursor",
+        code: "INVALID_CURSOR",
+        details: "Invalid pagination cursor",
+      },
     }),
     [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
       "Service not found",

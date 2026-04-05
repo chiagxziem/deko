@@ -66,6 +66,7 @@ export const dashboardExamples = {
       level: 'Invalid option: expected one of "info"|"warn"|"error"|"debug"',
       method:
         'Invalid option: expected one of "GET"|"HEAD"|"POST"|"PUT"|"PATCH"|"DELETE"|"CONNECT"|"OPTIONS"|"TRACE"',
+      cursor: "Invalid pagination cursor",
     },
   },
   singleServiceLogValErrs: {

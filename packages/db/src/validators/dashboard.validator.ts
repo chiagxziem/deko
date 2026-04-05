@@ -62,7 +62,7 @@ export const ServiceLogListSchema = z.object({
   pagination: z.object({
     hasNext: z.boolean(),
     nextCursor: z.string().nullable(),
-    totalEstimate: z.number(),
+    totalEstimate: z.number().nullable(),
   }),
 });
 

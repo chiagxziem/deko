@@ -38,6 +38,31 @@ import {
 
 const dashboard = createRouter();
 
+// In-memory cache for count queries since they can be expensive in large datasets
+const LOG_COUNT_CACHE_TTL_MS = 10_000;
+const logCountCache = new Map<string, { value: number; expiresAt: number }>();
+
+// the cursor is excluded because total count should represent the full filtered set,
+// not the current page position.
+const makeCountCacheKey = (params: {
+  serviceId: string;
+  period: string;
+  level?: string;
+  status?: number;
+  environment?: string;
+  method?: string;
+  path?: string;
+  to?: Date;
+  from?: Date;
+  search?: string;
+}) => {
+  return JSON.stringify({
+    ...params,
+    to: params.to?.toISOString(),
+    from: params.from?.toISOString(),
+  });
+};
+
 // Get Service Overview Stats by ID
 dashboard.get(
   "/:serviceId/stats/overview",
@@ -265,6 +290,8 @@ dashboard.get(
       search: z.string().optional(),
       cursor: z.string().optional(),
       limit: z.coerce.number().min(1).max(100).default(50),
+      // exactCount is opt-in because exact counts can be expensive on large datasets
+      exactCount: z.coerce.boolean().default(false),
     }),
     validationHook,
   ),
@@ -282,6 +309,7 @@ dashboard.get(
       search,
       cursor,
       limit,
+      exactCount,
     } = c.req.valid("query");
 
     // ensure the service exists
@@ -317,8 +345,12 @@ dashboard.get(
         cursorTimestamp = timestamp;
         cursorId = idStr;
       } catch (err) {
+        // Reject invalid cursors explicitly
         console.error("Failed to decode cursor:", cursor, err);
-        // Invalid cursor, ignore
+        return c.json(
+          errorResponse("INVALID_CURSOR", "Invalid pagination cursor"),
+          HttpStatusCodes.BAD_REQUEST,
+        );
       }
     }
 
@@ -351,16 +383,32 @@ dashboard.get(
       nextCursor = Buffer.from(cursorStr).toString("base64");
     }
 
-    const logList: ServiceLogList = {
-      logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => ({
-        ...log,
-        level: log.level,
-        method: log.method,
-      })),
-      pagination: {
-        hasNext: logs.length === limit,
-        nextCursor,
-        totalEstimate: await getServiceLogsCount({
+    // totalEstimate defaults to null and is only computed when exactCount=true
+    let totalEstimate: number | null = null;
+
+    if (exactCount) {
+      const cacheKey = makeCountCacheKey({
+        serviceId,
+        period,
+        level,
+        status,
+        environment,
+        method,
+        path,
+        to,
+        from,
+        search,
+      });
+
+      const cached = logCountCache.get(cacheKey);
+      const now = Date.now();
+
+      if (cached && cached.expiresAt > now) {
+        // if cached data exist, serve to reduce repeated count load
+        totalEstimate = cached.value;
+      } else {
+        // if there's no cached data, fetch & serve fresh data
+        totalEstimate = await getServiceLogsCount({
           serviceId,
           period,
           level,
@@ -371,7 +419,25 @@ dashboard.get(
           to,
           from,
           search,
-        }),
+        });
+
+        logCountCache.set(cacheKey, {
+          value: totalEstimate,
+          expiresAt: now + LOG_COUNT_CACHE_TTL_MS,
+        });
+      }
+    }
+
+    const logList: ServiceLogList = {
+      logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => ({
+        ...log,
+        level: log.level,
+        method: log.method,
+      })),
+      pagination: {
+        hasNext: logs.length === limit,
+        nextCursor,
+        totalEstimate,
       },
     };
 

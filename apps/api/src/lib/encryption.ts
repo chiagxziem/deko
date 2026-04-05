@@ -2,31 +2,44 @@ import crypto from "node:crypto";
 
 import env from "./env";
 
-const ALGORITHM = "aes-256-cbc";
-const IV_LENGTH = 16;
+// AES-256-GCM provides authenticated encryption: both confidentiality and integrity.
+// Tampered ciphertext is rejected during decryption.
+const ALGORITHM = "aes-256-gcm";
+const IV_LENGTH = 12;
+const PREFIX = "gcm";
 
 const getKey = () =>
   crypto.createHash("sha256").update(env.ENCRYPTION_KEY).digest();
 
 export const encrypt = (text: string): string => {
+  // Encryption format: gcm:<ivHex>:<authTagHex>:<cipherHex>
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, getKey(), iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return `${iv.toString("hex")}:${encrypted.toString("hex")}`;
+  const authTag = cipher.getAuthTag();
+
+  return `${PREFIX}:${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted.toString("hex")}`;
 };
 
 export const decrypt = (text: string): string => {
   const textParts = text.split(":");
-  const ivHex = textParts.shift();
-  if (!ivHex || textParts.length === 0) {
-    throw new Error("Invalid encrypted text format: missing IV or content");
+  const [_prefix, ivHex, authTagHex, encryptedHex] = textParts;
+
+  if (_prefix !== PREFIX || !ivHex || !authTagHex || !encryptedHex) {
+    throw new Error("Invalid encrypted text format");
   }
+
   const iv = Buffer.from(ivHex, "hex");
-  const encryptedText = Buffer.from(textParts.join(":"), "hex");
+  const authTag = Buffer.from(authTagHex, "hex");
+  const encryptedText = Buffer.from(encryptedHex, "hex");
   const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
+
+  decipher.setAuthTag(authTag);
+
   let decrypted = decipher.update(encryptedText);
   decrypted = Buffer.concat([decrypted, decipher.final()]);
+
   return decrypted.toString();
 };
 

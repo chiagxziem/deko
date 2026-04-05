@@ -1,10 +1,11 @@
 import { createMiddleware } from "hono/factory";
 
-import { redisClient as redis } from "@repo/redis";
-
 import HttpStatusCodes from "@/lib/http-status-codes";
+import { checkAndIncrementSlidingWindowRequests } from "@/lib/rate-limit";
 import { errorResponse } from "@/lib/utils";
 
+// This middleware only enforces the per-second (100 requests) request limit.
+// The per-minute event quota remains in the ingest route where batch size is known.
 export const ingestRateLimit = createMiddleware(async (c, next) => {
   const serviceToken = c.req.header("x-deko-service-token");
   if (!serviceToken) {
@@ -14,27 +15,22 @@ export const ingestRateLimit = createMiddleware(async (c, next) => {
     );
   }
 
-  // only the per-second request limit is checked here to prevent connection spam
-  // the per-minute event quota is checked in the ingest route
-  // this implements the "100 requests per second" logic accurately by counting requests
-
   const keySec = `ingest-rate-limit:${serviceToken}:sec`;
   const now = Date.now();
   const limitSec = 100;
+  const windowMs = 1_000;
 
   try {
-    await redis.send("MULTI", []);
-    await redis.send("ZREMRANGEBYSCORE", [
+    // an atomic Redis script helper is used to ensure transaction isolation
+    // and prevent race conditions
+    const rateLimitResult = await checkAndIncrementSlidingWindowRequests(
       keySec,
-      "0",
-      (now - 1_000).toString(),
-    ]);
-    await redis.send("ZCARD", [keySec]);
+      now,
+      limitSec,
+      windowMs,
+    );
 
-    const results = (await redis.send("EXEC", [])) as any[];
-    const currentCountSec = results[1] ?? 0;
-
-    if (currentCountSec >= limitSec) {
+    if (!rateLimitResult.allowed) {
       return c.json(
         errorResponse(
           "TOO_MANY_REQUESTS",
@@ -43,13 +39,6 @@ export const ingestRateLimit = createMiddleware(async (c, next) => {
         HttpStatusCodes.TOO_MANY_REQUESTS,
       );
     }
-
-    // register this request in the per-second window
-    const member = `${now}-${Math.random().toString(36).substring(2, 7)}`;
-    await redis.send("MULTI", []);
-    await redis.send("ZADD", [keySec, now.toString(), member]);
-    await redis.send("PEXPIRE", [keySec, "1000"]);
-    await redis.send("EXEC", []);
   } catch (error) {
     console.error("Ingest Rate Limit Error:", error);
     return c.json(

@@ -33,6 +33,15 @@ export const ServiceTokenSelectSchema = createSelectSchema(serviceToken)
       .nullable(),
   });
 
+// Public service-token shape for non-creation endpoints.
+// The plaintext token is only shown when it's being created.
+// Other times, this shape with a masked preview is used to avoid repeated secret exposure.
+export const ServiceTokenPublicSchema = ServiceTokenSelectSchema.omit({
+  token: true,
+}).extend({
+  tokenPreview: z.string().min(1),
+});
+
 export const ServiceTokenInsertSchema = createInsertSchema(serviceToken)
   .extend({
     name: z.string().min(1),
