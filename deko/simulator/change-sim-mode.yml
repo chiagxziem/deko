@@ -1,0 +1,19 @@
+info:
+  name: change-sim-mode
+  type: http
+  seq: 5
+
+http:
+  method: post
+  url: "{{SIM_URL}}/mode/:modeId"
+  params:
+    - name: modeId
+      value: steady
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

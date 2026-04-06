@@ -1,0 +1,15 @@
+info:
+  name: start-sim
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{SIM_URL}}/start"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

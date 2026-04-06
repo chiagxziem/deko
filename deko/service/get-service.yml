@@ -1,0 +1,19 @@
+info:
+  name: get-service
+  type: http
+  seq: 3
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/services/:serviceId"
+  params:
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

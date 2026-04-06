@@ -1,0 +1,25 @@
+info:
+  name: get-status-code-breakdown
+  type: http
+  seq: 6
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/stats/status-breakdown?period=24h&groupBy=code"
+  params:
+    - name: period
+      value: 24h
+      type: query
+    - name: groupBy
+      value: code
+      type: query
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

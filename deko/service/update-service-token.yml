@@ -1,0 +1,31 @@
+info:
+  name: update-service-token
+  type: http
+  seq: 7
+
+http:
+  method: patch
+  url: "{{BASE_URL}}/api/services/:serviceId/tokens/:tokenId"
+  headers:
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: tokenId
+      value: ""
+      type: path
+    - name: serviceId
+      value: ""
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Renamed Production Token"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

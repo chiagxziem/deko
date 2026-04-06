@@ -1,0 +1,25 @@
+info:
+  name: get-error-groups
+  type: http
+  seq: 9
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/errors/groups?period=24h&limit=20"
+  params:
+    - name: period
+      value: 24h
+      type: query
+    - name: limit
+      value: "20"
+      type: query
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,22 @@
+info:
+  name: get-logs-by-request-id
+  type: http
+  seq: 4
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/logs/by-request/:requestId"
+  params:
+    - name: requestId
+      value: adb64877-74fe-4938-8550-4e2f3510a45d
+      type: path
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

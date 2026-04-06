@@ -1,0 +1,19 @@
+info:
+  name: make-manual-tick
+  type: http
+  seq: 4
+
+http:
+  method: post
+  url: "{{SIM_URL}}/tick?count=10"
+  params:
+    - name: count
+      value: "10"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

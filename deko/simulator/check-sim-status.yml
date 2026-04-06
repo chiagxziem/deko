@@ -1,0 +1,15 @@
+info:
+  name: check-sim-status
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{SIM_URL}}/status"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

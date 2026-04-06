@@ -1,0 +1,28 @@
+info:
+  name: get-slow-logs
+  type: http
+  seq: 10
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/logs/slow?period=24h&minDuration=800&exactCount=true"
+  params:
+    - name: period
+      value: 24h
+      type: query
+    - name: minDuration
+      value: "800"
+      type: query
+    - name: exactCount
+      value: "true"
+      type: query
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

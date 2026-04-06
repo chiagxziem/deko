@@ -1,0 +1,25 @@
+info:
+  name: get-single-log
+  type: http
+  seq: 5
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/logs/:logId?timestamp=2026-04-06T18:42:33.066Z"
+  params:
+    - name: timestamp
+      value: 2026-04-06T18:42:33.066Z
+      type: query
+    - name: logId
+      value: 29f4700a-e45b-427b-91f6-34e359f78865
+      type: path
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

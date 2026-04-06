@@ -1,0 +1,19 @@
+info:
+  name: delete-service
+  type: http
+  seq: 5
+
+http:
+  method: delete
+  url: "{{BASE_URL}}/api/services/:serviceId"
+  params:
+    - name: serviceId
+      value: 055d1ace-2c3b-4797-ae0b-5809e704c007
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

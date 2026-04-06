@@ -1,0 +1,44 @@
+info:
+  name: get-logs
+  type: http
+  seq: 3
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/logs?period=24h&exactCount=true&limit=100"
+  params:
+    - name: period
+      value: 24h
+      type: query
+    - name: level
+      value: error
+      type: query
+      disabled: true
+    - name: status
+      value: "500"
+      type: query
+      disabled: true
+    - name: environment
+      value: prod
+      type: query
+      disabled: true
+    - name: exactCount
+      value: "true"
+      type: query
+    - name: cursor
+      value: ""
+      type: query
+      disabled: true
+    - name: limit
+      value: "100"
+      type: query
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

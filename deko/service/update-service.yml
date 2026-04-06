@@ -1,0 +1,28 @@
+info:
+  name: update-service
+  type: http
+  seq: 4
+
+http:
+  method: patch
+  url: "{{BASE_URL}}/api/services/:serviceId"
+  headers:
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: serviceId
+      value: 055d1ace-2c3b-4797-ae0b-5809e704c007
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Testing Service"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

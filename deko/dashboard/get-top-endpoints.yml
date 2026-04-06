@@ -1,0 +1,28 @@
+info:
+  name: get-top-endpoints
+  type: http
+  seq: 8
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/stats/top-endpoints?period=24h&sortBy=requests&limit=50"
+  params:
+    - name: period
+      value: 24h
+      type: query
+    - name: sortBy
+      value: requests
+      type: query
+    - name: limit
+      value: "50"
+      type: query
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

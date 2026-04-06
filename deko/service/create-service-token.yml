@@ -1,0 +1,28 @@
+info:
+  name: create-service-token
+  type: http
+  seq: 6
+
+http:
+  method: post
+  url: "{{BASE_URL}}/api/services/:serviceId/tokens"
+  headers:
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Test Service Token"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

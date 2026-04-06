@@ -1,0 +1,34 @@
+info:
+  name: get-timeseries-stats
+  type: http
+  seq: 2
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/stats/timeseries?period=24h"
+  params:
+    - name: period
+      value: 24h
+      type: query
+    - name: metrics
+      value: requests,errors
+      type: query
+      disabled: true
+    - name: method
+      value: POST
+      type: query
+      disabled: true
+    - name: environment
+      value: prod
+      type: query
+      disabled: true
+    - name: serviceId
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

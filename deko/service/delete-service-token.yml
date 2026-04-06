@@ -1,0 +1,22 @@
+info:
+  name: delete-service-token
+  type: http
+  seq: 8
+
+http:
+  method: delete
+  url: "{{BASE_URL}}/api/services/:serviceId/tokens/:tokenId"
+  params:
+    - name: tokenId
+      value: ""
+      type: path
+    - name: serviceId
+      value: ""
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

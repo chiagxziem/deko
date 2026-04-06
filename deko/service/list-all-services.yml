@@ -1,0 +1,15 @@
+info:
+  name: list-all-services
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{BASE_URL}}/api/services"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
