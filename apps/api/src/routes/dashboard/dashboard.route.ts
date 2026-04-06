@@ -9,6 +9,7 @@ import {
   ServiceLogList,
   ServiceOverviewStats,
   ServiceTimeseriesStats,
+  TopEndpointSortBySchema,
 } from "@repo/db/validators/dashboard.validator";
 
 import { createRouter } from "@/app";
@@ -16,24 +17,31 @@ import HttpStatusCodes from "@/lib/http-status-codes";
 import { errorResponse, successResponse } from "@/lib/utils";
 import { validationHook } from "@/middleware/validation-hook";
 import {
+  getErrorGroups,
   getLogLevelBreakdown,
   getLogTimeseries,
+  getLogsByRequestId,
   getPrevPeriod,
   getServiceLogs,
   getServiceLogsCount,
   getServiceOverviewStats,
   getSingleLog,
   getStatusCodeBreakdown,
+  getTopEndpoints,
 } from "@/queries/dashboard-queries";
 import { getSingleService } from "@/queries/service-queries";
 
 import {
+  getErrorGroupsDoc,
   getLogLevelBreakdownDoc,
+  getLogsByRequestIdDoc,
   getServiceLogsDoc,
   getServiceOverviewStatsDoc,
   getServiceTimeseriesStatsDoc,
   getSingleLogDoc,
+  getSlowLogsDoc,
   getStatusCodeBreakdownDoc,
+  getTopEndpointsDoc,
 } from "./dashboard.docs";
 
 const dashboard = createRouter();
@@ -63,7 +71,18 @@ const makeCountCacheKey = (params: {
   });
 };
 
-// Get Service Overview Stats by ID
+// ---------------------------------------------------------------------------
+// Overview Stats Endpoint
+// Purpose:
+// - Produces KPI cards for a service: total requests, error rate, and latency
+//   percentiles for the selected period.
+//
+// Behavior:
+// - Verifies service existence first for predictable 404 behavior.
+// - Computes current period metrics and compares against previous equal-length
+//   period to return percentage deltas.
+// - Returns sensible zero defaults when no logs exist yet.
+// ---------------------------------------------------------------------------
 dashboard.get(
   "/:serviceId/stats/overview",
   getServiceOverviewStatsDoc,
@@ -176,7 +195,17 @@ dashboard.get(
   },
 );
 
-// Get Service Time Series Stats by ID
+// ---------------------------------------------------------------------------
+// Timeseries Stats Endpoint
+// Purpose:
+// - Returns bucketed metrics for charting trends over time (traffic, errors,
+//   and latency percentiles).
+//
+// Behavior:
+// - Supports optional metric projection to reduce payload size.
+// - Supports optional dimension filters (`environment`, `method`, `path`, `level`)
+//   so clients can chart a precise traffic slice.
+// ---------------------------------------------------------------------------
 dashboard.get(
   "/:serviceId/stats/timeseries",
   getServiceTimeseriesStatsDoc,
@@ -194,12 +223,17 @@ dashboard.get(
         .describe(
           "Comma separated list of metrics to retrieve. Valid values: requests, errors, avg_duration, p50_duration, p95_duration, p99_duration",
         ),
+      environment: z.string().optional(),
+      method: MethodEnumSchema.optional(),
+      path: z.string().optional(),
+      level: LevelEnumSchema.optional(),
     }),
     validationHook,
   ),
   async (c) => {
     const { serviceId } = c.req.valid("param");
-    const { period, granularity, metrics } = c.req.valid("query");
+    const { period, granularity, metrics, environment, method, path, level } =
+      c.req.valid("query");
 
     // ensure the service exists
     const service = await getSingleService(serviceId);
@@ -230,6 +264,10 @@ dashboard.get(
       serviceId,
       period,
       granularity,
+      environment,
+      method,
+      path,
+      level,
     });
 
     const serviceTimeseriesStats: ServiceTimeseriesStats = {
@@ -265,7 +303,17 @@ dashboard.get(
   },
 );
 
-// Get Service Logs by ID
+// ---------------------------------------------------------------------------
+// Service Logs Endpoint
+// Purpose:
+// - Provides the main paginated log feed for a service with rich filtering.
+//
+// Behavior:
+// - Uses cursor pagination for stable traversal under write-heavy workloads.
+// - Can optionally compute exact filtered totals (`exactCount=true`) and reuses
+//   a short-lived in-memory cache to reduce repeated count-query load.
+// - Redacts sensitive transport fields (`ipHash`, `userAgent`) before response.
+// ---------------------------------------------------------------------------
 dashboard.get(
   "/:serviceId/logs",
   getServiceLogsDoc,
@@ -448,7 +496,63 @@ dashboard.get(
   },
 );
 
-// Get Single Log
+// ---------------------------------------------------------------------------
+// Logs by Request ID
+// Returns all log events that share the same requestId, ordered chronologically.
+// This lets the dashboard reconstruct a full request trace when the user clicks
+// into a specific request.  The route must be defined before /:serviceId/logs/:logId
+// to prevent "by-request" from being captured as a logId param – though Hono
+// resolves static segments first, registering explicitly avoids confusion.
+// ---------------------------------------------------------------------------
+dashboard.get(
+  "/:serviceId/logs/by-request/:requestId",
+  getLogsByRequestIdDoc,
+  validator(
+    "param",
+    z.object({ serviceId: z.uuid(), requestId: z.string().min(1) }),
+    validationHook,
+  ),
+  async (c) => {
+    const { serviceId, requestId } = c.req.valid("param");
+
+    const service = await getSingleService(serviceId);
+    if (!service) {
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
+    }
+
+    // Strip ipHash and userAgent from each row
+    const rawLogs = await getLogsByRequestId(serviceId, requestId);
+    const logs = rawLogs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => log);
+
+    if (logs.length === 0) {
+      return c.json(
+        errorResponse("NOT_FOUND", "No logs found for this request ID"),
+        HttpStatusCodes.NOT_FOUND,
+      );
+    }
+
+    return c.json(
+      successResponse(
+        { requestId, logs, count: logs.length },
+        "Request logs retrieved successfully",
+      ),
+      HttpStatusCodes.OK,
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Single Log Endpoint
+// Purpose:
+// - Returns details of one log record for drill-down interactions.
+//
+// Behavior:
+// - Requires both `logId` and `timestamp` to align with hypertable/composite-key
+//   lookup strategy and keep queries selective.
+// ---------------------------------------------------------------------------
 dashboard.get(
   "/:serviceId/logs/:logId",
   getSingleLogDoc,
@@ -500,7 +604,15 @@ dashboard.get(
   },
 );
 
-// Get Status Code Breakdown
+// ---------------------------------------------------------------------------
+// Status Breakdown Endpoint
+// Purpose:
+// - Returns status distribution for charting either as exact codes or grouped
+//   categories (2xx/3xx/4xx/5xx).
+//
+// Behavior:
+// - Shares filter semantics with other dashboard analytics endpoints.
+// ---------------------------------------------------------------------------
 dashboard.get(
   "/:serviceId/stats/status-breakdown",
   getStatusCodeBreakdownDoc,
@@ -546,7 +658,15 @@ dashboard.get(
   },
 );
 
-// Get Log Level Breakdown
+// ---------------------------------------------------------------------------
+// Log Level Breakdown Endpoint
+// Purpose:
+// - Shows severity distribution (`debug/info/warn/error`) for alerting and
+//   operational health trend monitoring.
+//
+// Behavior:
+// - Returns count + percentage for each observed level.
+// ---------------------------------------------------------------------------
 dashboard.get(
   "/:serviceId/stats/log-level-breakdown",
   getLogLevelBreakdownDoc,
@@ -580,6 +700,283 @@ dashboard.get(
 
     return c.json(
       successResponse(breakdown, "Log level breakdown retrieved successfully"),
+      HttpStatusCodes.OK,
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Top Endpoints
+// Ranks unique (method, path) pairs by a chosen metric (requests, errors,
+// error_rate, p95_duration, p99_duration).  Useful for surfacing hotspots
+// without requiring the user to scroll through raw logs.
+// ---------------------------------------------------------------------------
+dashboard.get(
+  "/:serviceId/stats/top-endpoints",
+  getTopEndpointsDoc,
+  validator("param", z.object({ serviceId: z.uuid() }), validationHook),
+  validator(
+    "query",
+    z.object({
+      period: PeriodEnumSchema.default("24h"),
+      sortBy: TopEndpointSortBySchema.default("requests"),
+      environment: z.string().optional(),
+      method: MethodEnumSchema.optional(),
+      // limit is capped at 50 to prevent excessively large payloads
+      limit: z.coerce.number().min(1).max(50).default(10),
+    }),
+    validationHook,
+  ),
+  async (c) => {
+    const { serviceId } = c.req.valid("param");
+    const { period, sortBy, environment, method, limit } = c.req.valid("query");
+
+    const service = await getSingleService(serviceId);
+    if (!service) {
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
+    }
+
+    const endpoints = await getTopEndpoints({
+      serviceId,
+      period,
+      sortBy,
+      environment,
+      method,
+      limit,
+    });
+
+    return c.json(
+      successResponse(
+        { endpoints, sortBy },
+        "Top endpoints retrieved successfully",
+      ),
+      HttpStatusCodes.OK,
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Error Groups
+// Fingerprints recurring errors by (method, path, status, message) so the
+// dashboard can show "42 occurrences of the same 500 on POST /api/checkout"
+// instead of 42 individual log lines.
+// ---------------------------------------------------------------------------
+dashboard.get(
+  "/:serviceId/errors/groups",
+  getErrorGroupsDoc,
+  validator("param", z.object({ serviceId: z.uuid() }), validationHook),
+  validator(
+    "query",
+    z.object({
+      period: PeriodEnumSchema.default("24h"),
+      environment: z.string().optional(),
+      // limit is capped at 100. showing more than 100 distinct error fingerprints
+      // is rarely useful and starts to become noise rather than signal.
+      limit: z.coerce.number().min(1).max(100).default(20),
+    }),
+    validationHook,
+  ),
+  async (c) => {
+    const { serviceId } = c.req.valid("param");
+    const { period, environment, limit } = c.req.valid("query");
+
+    const service = await getSingleService(serviceId);
+    if (!service) {
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
+    }
+
+    const result = await getErrorGroups({
+      serviceId,
+      period,
+      environment,
+      limit,
+    });
+
+    return c.json(
+      successResponse(result, "Error groups retrieved successfully"),
+      HttpStatusCodes.OK,
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Slow Logs
+// A convenience wrapper around the standard /logs endpoint that pre-applies a
+// duration filter.  Callers can pass minDuration to adjust the threshold; omitting
+// it defaults to 1000 ms (1 second), which is a common SLO boundary.
+// The effective threshold is echoed back in the response so clients know which
+// cutoff was applied when they relied on the default.
+// ---------------------------------------------------------------------------
+dashboard.get(
+  "/:serviceId/logs/slow",
+  getSlowLogsDoc,
+  validator("param", z.object({ serviceId: z.uuid() }), validationHook),
+  validator(
+    "query",
+    z.object({
+      period: PeriodEnumSchema.default("24h"),
+      // minDuration has a default of 1000 ms
+      minDuration: z.coerce.number().min(1).default(1000),
+      level: LevelEnumSchema.optional(),
+      status: z.coerce.number().optional(),
+      environment: z.string().optional(),
+      method: MethodEnumSchema.optional(),
+      path: z.string().optional(),
+      to: z.iso
+        .datetime()
+        .transform((n) => new Date(n))
+        .optional(),
+      from: z.iso
+        .datetime()
+        .transform((n) => new Date(n))
+        .optional(),
+      cursor: z.string().optional(),
+      limit: z.coerce.number().min(1).max(100).default(50),
+      exactCount: z.coerce.boolean().default(false),
+    }),
+    validationHook,
+  ),
+  async (c) => {
+    const { serviceId } = c.req.valid("param");
+    const {
+      period,
+      minDuration,
+      level,
+      status,
+      environment,
+      method,
+      path,
+      to,
+      from,
+      cursor: cursorRaw,
+      limit,
+      exactCount,
+    } = c.req.valid("query");
+
+    const service = await getSingleService(serviceId);
+    if (!service) {
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
+    }
+
+    // Decode cursor
+    let cursorTimestamp: number | undefined;
+    let cursorId: string | undefined;
+
+    if (cursorRaw) {
+      try {
+        const normalizedCursor = cursorRaw.replace(/ /g, "+");
+        const decoded = Buffer.from(normalizedCursor, "base64").toString(
+          "utf-8",
+        );
+        const [timestampStr, idStr] = decoded.split(":");
+        if (!timestampStr || !idStr) throw new Error("Invalid cursor format");
+
+        const timestamp = parseInt(timestampStr);
+        if (isNaN(timestamp) || !z.uuid().safeParse(idStr).success) {
+          throw new Error("Invalid cursor values");
+        }
+
+        cursorTimestamp = timestamp;
+        cursorId = idStr;
+      } catch {
+        return c.json(
+          errorResponse("INVALID_CURSOR", "Invalid pagination cursor"),
+          HttpStatusCodes.BAD_REQUEST,
+        );
+      }
+    }
+
+    const logs = await getServiceLogs({
+      serviceId,
+      period,
+      level,
+      status,
+      environment,
+      method,
+      path,
+      to,
+      from,
+      limit,
+      minDuration,
+      cursor:
+        cursorTimestamp && cursorId
+          ? { timestamp: new Date(cursorTimestamp), id: cursorId }
+          : undefined,
+    });
+
+    // Generate next cursor
+    let nextCursor: string | null = null;
+    if (logs.length === limit) {
+      const lastLog = logs[logs.length - 1];
+      nextCursor = Buffer.from(
+        `${lastLog.timestamp.getTime()}:${lastLog.id}`,
+      ).toString("base64");
+    }
+
+    // Optional exact count
+    let totalEstimate: number | null = null;
+    if (exactCount) {
+      const cacheKey = makeCountCacheKey({
+        serviceId,
+        period,
+        level,
+        status,
+        environment,
+        method,
+        path,
+        to,
+        from,
+        search: undefined,
+      });
+
+      const cached = logCountCache.get(cacheKey);
+      const now = Date.now();
+
+      if (cached && cached.expiresAt > now) {
+        totalEstimate = cached.value;
+      } else {
+        totalEstimate = await getServiceLogsCount({
+          serviceId,
+          period,
+          level,
+          status,
+          environment,
+          method,
+          path,
+          to,
+          from,
+          minDuration,
+        });
+        logCountCache.set(cacheKey, {
+          value: totalEstimate,
+          expiresAt: now + LOG_COUNT_CACHE_TTL_MS,
+        });
+      }
+    }
+
+    return c.json(
+      successResponse(
+        {
+          logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => log),
+          pagination: {
+            hasNext: logs.length === limit,
+            nextCursor,
+            totalEstimate,
+          },
+          // Echo the threshold so the client knows what "slow" meant for this request
+          thresholdMs: minDuration,
+        },
+        "Slow logs retrieved successfully",
+      ),
       HttpStatusCodes.OK,
     );
   },

@@ -28,6 +28,23 @@ import { ingestLogDoc } from "./ingest.docs";
 
 const ingest = createRouter();
 
+// ---------------------------------------------------------------------------
+// Ingest Endpoint
+// Purpose:
+// - Accepts one or many log events from client SDKs/services and enqueues them
+//   for asynchronous processing by the worker.
+//
+// Design rationale:
+// - Keeps request latency low by validating + enqueueing quickly instead of doing
+//   expensive scrubbing/storage inline.
+// - Applies layered protections before queueing:
+//   1) hard body-size cap
+//   2) header + payload validation
+//   3) per-second and per-minute rate limits
+//   4) per-event guardrails (status validity, event payload size)
+// - Partial acceptance is supported: invalid events in a batch are rejected while
+//   valid events proceed, and response returns accepted/rejected counts.
+// ---------------------------------------------------------------------------
 ingest.post(
   "/",
   maxBodySize(256 * 1024),

@@ -1,11 +1,8 @@
 {
   "name": "@repo/api",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "scripts": {
-    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile api-exe",
+    "build": "bun build --compile --minify src/index.ts --outfile api-exe",
     "dev": "bun run --hot src/index.ts",
     "start": "./api-exe"
   },

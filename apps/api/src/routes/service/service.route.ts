@@ -70,7 +70,16 @@ const toPublicToken = (tokenRow: {
   };
 };
 
-// Get all services
+// ---------------------------------------------------------------------------
+// List Services Endpoint
+// Purpose:
+// - Returns all services so the dashboard/service selector can render available
+//   projects in one request.
+//
+// Behavior:
+// - Read-only endpoint with no payload.
+// - Responds with a uniform success envelope containing service rows.
+// ---------------------------------------------------------------------------
 serviceRouter.get("/", getServicesDoc, async (c) => {
   const services = await getServices();
 
@@ -80,7 +89,16 @@ serviceRouter.get("/", getServicesDoc, async (c) => {
   );
 });
 
-// Create service
+// ---------------------------------------------------------------------------
+// Create Service Endpoint
+// Purpose:
+// - Creates a new service entity from a validated name.
+//
+// Behavior:
+// - Validation ensures required shape before any DB work.
+// - Slug uniqueness and persistence details are handled by `createService` query.
+// - Returns HTTP 201 with created row.
+// ---------------------------------------------------------------------------
 serviceRouter.post(
   "/",
   createServiceDoc,
@@ -97,7 +115,15 @@ serviceRouter.post(
   },
 );
 
-// Get single service
+// ---------------------------------------------------------------------------
+// Get Single Service Endpoint
+// Purpose:
+// - Retrieves one service and its token metadata for the service detail view.
+//
+// Security behavior:
+// - Token plaintext is never re-emitted from read endpoints.
+// - Each token is transformed to a masked `tokenPreview` representation.
+// ---------------------------------------------------------------------------
 serviceRouter.get(
   "/:id",
   getServiceDoc,
@@ -133,7 +159,16 @@ serviceRouter.get(
   },
 );
 
-// Update service
+// ---------------------------------------------------------------------------
+// Update Service Endpoint
+// Purpose:
+// - Updates mutable service fields (currently `name`) and returns refreshed data.
+//
+// Behavior:
+// - Performs existence check first for clean 404 semantics.
+// - Fast-path: if name is unchanged, returns existing shaped payload without write.
+// - Always returns masked token previews in the response.
+// ---------------------------------------------------------------------------
 serviceRouter.patch(
   "/:id",
   updateServiceDoc,
@@ -205,7 +240,16 @@ serviceRouter.patch(
   },
 );
 
-// Delete service
+// ---------------------------------------------------------------------------
+// Delete Service Endpoint
+// Purpose:
+// - Removes a service record and associated resources through database cascade
+//   rules (where configured).
+//
+// Behavior:
+// - Verifies service existence before attempting deletion to return predictable
+//   not-found responses.
+// ---------------------------------------------------------------------------
 serviceRouter.delete(
   "/:id",
   deleteServiceDoc,
@@ -241,7 +285,16 @@ serviceRouter.delete(
   },
 );
 
-// Create service token
+// ---------------------------------------------------------------------------
+// Create Service Token Endpoint
+// Purpose:
+// - Generates a new token for a service and persists secure representations.
+//
+// Security behavior:
+// - Plaintext token is generated once and returned only in this creation response.
+// - At-rest storage keeps encrypted token (for internal preview masking) and hashed
+//   token (for deterministic auth lookup).
+// ---------------------------------------------------------------------------
 serviceRouter.post(
   "/:id/tokens",
   createServiceTokenDoc,
@@ -292,7 +345,16 @@ serviceRouter.post(
   },
 );
 
-// Update service token
+// ---------------------------------------------------------------------------
+// Update Service Token Endpoint
+// Purpose:
+// - Updates token metadata (token name) without rotating the underlying secret.
+//
+// Behavior:
+// - Enforces scoped lookup (service + token).
+// - Returns masked token preview, never plaintext token value.
+// - Short-circuits if name is unchanged.
+// ---------------------------------------------------------------------------
 serviceRouter.patch(
   "/:serviceId/tokens/:tokenId",
   updateServiceTokenDoc,
@@ -369,7 +431,16 @@ serviceRouter.patch(
   },
 );
 
-// Delete service token
+// ---------------------------------------------------------------------------
+// Delete Service Token Endpoint
+// Purpose:
+// - Revokes a token by deleting it from the owning service scope.
+//
+// Behavior:
+// - Verifies service and token existence to provide explicit, user-friendly
+//   not-found errors.
+// - Returns a success marker payload on completion.
+// ---------------------------------------------------------------------------
 serviceRouter.delete(
   "/:serviceId/tokens/:tokenId",
   deleteServiceTokenDoc,

@@ -1,12 +1,16 @@
 import { describeRoute } from "hono-openapi";
 
 import {
+  ErrorGroupsResponseSchema,
   LogLevelBreakdownSchema,
+  RequestLogsResponseSchema,
   ServiceLogListSchema,
   ServiceLogSchema,
   ServiceOverviewStatsSchema,
   ServiceTimeseriesStatsSchema,
+  SlowLogsResponseSchema,
   StatusCodeBreakdownSchema,
+  TopEndpointsResponseSchema,
 } from "@repo/db/validators/dashboard.validator";
 
 import HttpStatusCodes from "@/lib/http-status-codes";
@@ -272,6 +276,154 @@ export const getLogLevelBreakdownDoc = describeRoute({
         details: "Service not found",
       },
     }),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
+  },
+});
+
+export const getTopEndpointsDoc = describeRoute({
+  description: "Rank unique (method, path) endpoints by a chosen metric",
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: createSuccessResponse("Top endpoints retrieved", {
+      details: "Top endpoints retrieved successfully",
+      dataSchema: TopEndpointsResponseSchema,
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
+      invalidUUID: {
+        summary: "Invalid service ID",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.topEndpointsValErrs.idErrors,
+        ),
+        fields: dashboardExamples.topEndpointsValErrs.idErrors,
+      },
+      validationError: {
+        summary: "Invalid request data",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.topEndpointsValErrs.invalidData,
+        ),
+        fields: dashboardExamples.topEndpointsValErrs.invalidData,
+      },
+    }),
+    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
+      "Service not found",
+      { code: "NOT_FOUND", details: "Service not found" },
+    ),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
+  },
+});
+
+export const getErrorGroupsDoc = describeRoute({
+  description:
+    "Return recurring errors fingerprinted by (method, path, status, message), ordered by occurrence count.",
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: createSuccessResponse("Error groups retrieved", {
+      details: "Error groups retrieved successfully",
+      dataSchema: ErrorGroupsResponseSchema,
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
+      invalidUUID: {
+        summary: "Invalid service ID",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.errorGroupsValErrs.idErrors,
+        ),
+        fields: dashboardExamples.errorGroupsValErrs.idErrors,
+      },
+      validationError: {
+        summary: "Invalid request data",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.errorGroupsValErrs.invalidData,
+        ),
+        fields: dashboardExamples.errorGroupsValErrs.invalidData,
+      },
+    }),
+    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
+      "Service not found",
+      { code: "NOT_FOUND", details: "Service not found" },
+    ),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
+  },
+});
+
+export const getLogsByRequestIdDoc = describeRoute({
+  description:
+    "Fetch all log events that share the same requestId, ordered chronologically.",
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: createSuccessResponse("Request logs retrieved", {
+      details: "Request logs retrieved successfully",
+      dataSchema: RequestLogsResponseSchema,
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
+      invalidUUID: {
+        summary: "Invalid service ID",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.requestLogsValErrs.idErrors,
+        ),
+        fields: dashboardExamples.requestLogsValErrs.idErrors,
+      },
+    }),
+    [HttpStatusCodes.NOT_FOUND]: createErrorResponse("Not found", {
+      serviceNotFound: {
+        summary: "Service not found",
+        code: "NOT_FOUND",
+        details: "Service not found",
+      },
+      noLogs: {
+        summary: "No logs found for this request ID",
+        code: "NOT_FOUND",
+        details: "No logs found for this request ID",
+      },
+    }),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
+  },
+});
+
+export const getSlowLogsDoc = describeRoute({
+  description:
+    "Paginated list of log events whose duration exceeds minDuration (default 1000 ms)",
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: createSuccessResponse("Slow logs retrieved", {
+      details: "Slow logs retrieved successfully",
+      dataSchema: SlowLogsResponseSchema,
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
+      invalidUUID: {
+        summary: "Invalid service ID",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.slowLogsValErrs.idErrors,
+        ),
+        fields: dashboardExamples.slowLogsValErrs.idErrors,
+      },
+      validationError: {
+        summary: "Invalid request data",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields(
+          dashboardExamples.slowLogsValErrs.invalidData,
+        ),
+        fields: dashboardExamples.slowLogsValErrs.invalidData,
+      },
+      invalidCursor: {
+        summary: "Invalid cursor",
+        code: "INVALID_CURSOR",
+        details: "Invalid pagination cursor",
+      },
+    }),
+    [HttpStatusCodes.NOT_FOUND]: createGenericErrorResponse(
+      "Service not found",
+      { code: "NOT_FOUND", details: "Service not found" },
+    ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },

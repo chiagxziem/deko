@@ -14,12 +14,15 @@ import {
 } from "@repo/db";
 import { logEvent } from "@repo/db/schemas/event.schema";
 import {
+  ErrorGroupsResponse,
   GranularityType,
   LevelType,
   LogLevelBreakdown,
   MethodType,
   PeriodType,
   StatusCodeBreakdown,
+  TopEndpoint,
+  TopEndpointSortBy,
 } from "@repo/db/validators/dashboard.validator";
 
 export type Period = PeriodType;
@@ -44,6 +47,9 @@ export type LogFilters = {
     timestamp: Date;
     id: string;
   };
+  // When provided, only logs with duration >= minDuration are included.
+  // Used by the /logs/slow endpoint to filter by latency threshold.
+  minDuration?: number;
 };
 
 export type TimeseriesFilters = {
@@ -52,6 +58,38 @@ export type TimeseriesFilters = {
   period?: Period;
   from?: Date;
   to?: Date;
+  // Optional dimension filters allow slicing the timeseries by a specific attribute.
+  // Without these, every bucket aggregates all logs for the service regardless of
+  // method, environment, path, or level.
+  environment?: string;
+  method?: Method;
+  path?: string;
+  level?: Level;
+};
+
+// Filters for the top-endpoints leaderboard query.
+export type TopEndpointsFilters = {
+  serviceId: string;
+  period?: Period;
+  from?: Date;
+  to?: Date;
+  // Optional dimension pre-filters applied before grouping so the leaderboard
+  // reflects only the slice of traffic the user cares about.
+  environment?: string;
+  method?: Method;
+  // Which metric to rank endpoints by (defaults to requests if omitted).
+  sortBy?: TopEndpointSortBy;
+  limit?: number;
+};
+
+// Filters for the error-groups aggregation query.
+export type ErrorGroupFilters = {
+  serviceId: string;
+  period?: Period;
+  from?: Date;
+  to?: Date;
+  environment?: string;
+  limit?: number;
 };
 
 /**
@@ -74,9 +112,15 @@ const periodToDate = (period: Period): Date => {
 };
 
 /**
- * Returns the from/to dates for the previous period (for comparison stats)
- * @param period - The period to get the previous range for
- * @returns Object with `from` and `to` dates for the previous period
+ * Returns the previous window for a given period length.
+ *
+ * Why this exists:
+ * - Overview endpoints compare "current period" against the immediately
+ *   preceding period of identical duration to compute percentage deltas.
+ *
+ * Example:
+ * - If period is `24h`, the function returns `[now-48h, now-24h]`.
+ * - Current period is then `[now-24h, now]`.
  */
 export const getPrevPeriod = (period: Period): { from: Date; to: Date } => {
   const now = new Date();
@@ -199,11 +243,25 @@ const getLogConditions = (filters: LogFilters) => {
     );
   }
 
+  // When minDuration is provided, exclude all logs with a shorter response time.
+  // This is used by the /logs/slow endpoint to enforce a latency threshold.
+  const { minDuration } = filters;
+  if (minDuration !== undefined)
+    conditions.push(gte(logEvent.duration, minDuration));
+
   return { conditions, periodStart, periodEnd };
 };
 
 /**
- * Fetches logs for a specific service based on the provided filters.
+ * Fetches a page of logs for a service with composable filters.
+ *
+ * Why this exists:
+ * - Provides the canonical list query used by both `/logs` and `/logs/slow`.
+ * - Consolidates pagination ordering to ensure cursor semantics remain stable.
+ *
+ * Behavior notes:
+ * - Orders by `(timestamp DESC, id DESC)` for deterministic pagination.
+ * - Applies wildcard path filtering and optional full-text search.
  */
 export const getServiceLogs = async (filters: LogFilters) => {
   const { limit = 50, offset = 0 } = filters;
@@ -219,8 +277,12 @@ export const getServiceLogs = async (filters: LogFilters) => {
 };
 
 /**
- * Gets the exact count of logs matching the filters.
- * Used for totalEstimate in pagination.
+ * Computes the exact row count for a filtered log set.
+ *
+ * Why this exists:
+ * - Some UI views need accurate totals for pagination controls.
+ * - Count queries are intentionally separate from list queries so handlers can
+ *   make this work optional (`exactCount=true`) and cache it aggressively.
  */
 export const getServiceLogsCount = async (
   filters: LogFilters,
@@ -236,7 +298,17 @@ export const getServiceLogsCount = async (
 };
 
 /**
- * Calculates overview stats using SQL aggregation.
+ * Calculates service-level summary metrics for a selected time window.
+ *
+ * Why this exists:
+ * - Dashboard cards need high-level KPIs (traffic, errors, latency percentiles)
+ *   without transferring large raw log volumes.
+ *
+ * Behavior notes:
+ * - Uses SQL aggregates and percentile functions directly in the database.
+ * - Returns zero-safe metrics for empty sets via `COALESCE`.
+ * - Includes resolved period bounds so callers can echo the exact evaluated
+ *   window in API responses.
  */
 export const getServiceOverviewStats = async (filters: LogFilters) => {
   const { conditions, periodStart, periodEnd } = getLogConditions(filters);
@@ -288,7 +360,19 @@ export const getServiceOverviewStats = async (filters: LogFilters) => {
  * @returns Bucketed timeseries data with counts and avg duration
  */
 export const getLogTimeseries = async (filters: TimeseriesFilters) => {
-  const { serviceId, granularity, period = "24h", from, to } = filters;
+  const {
+    serviceId,
+    granularity,
+    period = "24h",
+    from,
+    to,
+    // Dimension filters that allow slicing the timeseries chart by a specific attribute.
+    // For example, passing environment="prod" will only include production traffic in each bucket.
+    environment,
+    method,
+    path,
+    level,
+  } = filters;
 
   // Use provided granularity or auto-select based on period
   const bucketSize = granularity ?? getDefaultGranularity(period);
@@ -311,7 +395,26 @@ export const getLogTimeseries = async (filters: TimeseriesFilters) => {
     endTime = to ?? new Date();
   }
 
-  // Use TimescaleDB's time_bucket for efficient aggregation
+  // Build optional dimension conditions derived from the filter parameters.
+  // These are added to the raw SQL so the time_bucket aggregation only considers
+  // the requested slice, rather than requiring client-side post-filtering.
+  const dimensionConditions = [];
+  if (environment)
+    dimensionConditions.push(eq(logEvent.environment, environment));
+  if (method) dimensionConditions.push(eq(logEvent.method, method));
+  if (path) {
+    // Wildcard paths like /api/* are translated to SQL LIKE patterns.
+    if (path.includes("*")) {
+      dimensionConditions.push(like(logEvent.path, pathToLikePattern(path)));
+    } else {
+      dimensionConditions.push(eq(logEvent.path, path));
+    }
+  }
+  if (level) dimensionConditions.push(eq(logEvent.level, level));
+
+  // Use TimescaleDB's time_bucket for efficient aggregation.
+  // Dimension conditions are appended to the WHERE clause only when present,
+  // avoiding an unnecessary AND TRUE that could confuse query planners.
   const result = await db.execute(sql`
     SELECT
       time_bucket(${bucketInterval}::interval, timestamp) AS bucket,
@@ -325,6 +428,7 @@ export const getLogTimeseries = async (filters: TimeseriesFilters) => {
     WHERE service_id = ${serviceId}
       AND timestamp >= ${startTime}
       AND timestamp <= ${endTime}
+      ${dimensionConditions.length > 0 ? sql`AND ${and(...dimensionConditions)}` : sql``}
     GROUP BY bucket
     ORDER BY bucket ASC
   `);
@@ -374,13 +478,17 @@ export const getSingleLog = async (
 };
 
 /**
- * Fetches status code breakdown for a service.
+ * Builds status-code breakdown analytics for dashboards.
  *
- * @param serviceId - The service ID
- * @param period - The period to fetch data for
- * @param environment - The environment to fetch data for
- * @param groupBy - The field to group by
- * @returns The status code breakdown
+ * Why this exists:
+ * - Enables two visualization styles from one query path:
+ *   1) `groupBy=code` for exact status slices (e.g. 500, 404)
+ *   2) `groupBy=category` for coarse classes (2xx, 4xx, 5xx)
+ *
+ * Behavior notes:
+ * - Computes percentages relative to the filtered total row count.
+ * - Applies the same shared filter builder as the log list endpoints to keep
+ *   analytics and raw log views consistent.
  */
 export const getStatusCodeBreakdown = async ({
   serviceId,
@@ -467,13 +575,15 @@ export const getStatusCodeBreakdown = async ({
 };
 
 /**
- * Fetches status code breakdown for a service.
+ * Builds log-level distribution analytics for dashboards.
  *
- * @param serviceId - The service ID
- * @param period - The period to fetch data for
- * @param environment - The environment to fetch data for
- * @param groupBy - The field to group by
- * @returns The status code breakdown
+ * Why this exists:
+ * - Lets operators quickly understand severity distribution drift over time
+ *   (e.g., spikes in `error` or `warn` levels).
+ *
+ * Behavior notes:
+ * - Returns both absolute counts and percentage contribution per level.
+ * - Shares filter semantics with the rest of dashboard analytics.
  */
 export const getLogLevelBreakdown = async ({
   serviceId,
@@ -507,4 +617,209 @@ export const getLogLevelBreakdown = async ({
     .orderBy(asc(logEvent.level));
 
   return { breakdown, total };
+};
+
+// ---------------------------------------------------------------------------
+// Top Endpoints
+// Groups all log events by (method, path) and computes aggregate performance
+// stats per endpoint.  A dynamic ORDER BY expression lets callers rank by
+// whichever signal matters most (volume, error count, latency, etc.) without
+// requiring multiple queries or post-processing on the client.
+// ---------------------------------------------------------------------------
+
+export const getTopEndpoints = async (
+  filters: TopEndpointsFilters,
+): Promise<TopEndpoint[]> => {
+  const {
+    serviceId,
+    period = "24h",
+    from,
+    to,
+    environment,
+    method,
+    sortBy = "requests",
+    limit = 10,
+  } = filters;
+
+  // Build time-range conditions.
+  let startTime: Date;
+  let endTime: Date;
+  if (from && to) {
+    startTime = from;
+    endTime = to;
+  } else {
+    startTime = periodToDate(period);
+    endTime = new Date();
+  }
+
+  const conditions = [
+    eq(logEvent.serviceId, serviceId),
+    gte(logEvent.timestamp, startTime),
+    lte(logEvent.timestamp, endTime),
+  ];
+
+  // Optional pre-filters narrow the group by before aggregation.
+  if (environment) conditions.push(eq(logEvent.environment, environment));
+  if (method) conditions.push(eq(logEvent.method, method));
+
+  // Map the sortBy enum value to a raw SQL ORDER BY expression.
+  // Using predefined sql`` fragments is safe because sortBy is Zod-enum validated –
+  // no user-controlled string ever reaches this switch.
+  const orderByExprMap = {
+    requests: sql`COUNT(*)`,
+    errors: sql`COUNT(*) FILTER (WHERE status >= 400)`,
+    error_rate: sql`COUNT(*) FILTER (WHERE status >= 400)::real / NULLIF(COUNT(*), 0)`,
+    p95_duration: sql`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration)`,
+    p99_duration: sql`PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration)`,
+  } as const;
+  const orderByExpr = orderByExprMap[sortBy];
+
+  const result = await db.execute(sql`
+    SELECT
+      method,
+      path,
+      COUNT(*)::int AS requests,
+      COUNT(*) FILTER (WHERE status >= 400)::int AS errors,
+      COALESCE(AVG(duration), 0)::real AS "avgDuration",
+      COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration), 0)::real AS "p95Duration",
+      COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration), 0)::real AS "p99Duration"
+    FROM log_event
+    WHERE ${and(...conditions)}
+    GROUP BY method, path
+    ORDER BY ${orderByExpr} DESC NULLS LAST
+    LIMIT ${limit}
+  `);
+
+  // errorRate is computed in TypeScript to avoid a second DB round-trip.
+  // It is expressed as a percentage (0–100), consistent with the overview stats endpoint.
+  return (
+    result.rows as Array<{
+      method: string;
+      path: string;
+      requests: number;
+      errors: number;
+      avgDuration: number;
+      p95Duration: number;
+      p99Duration: number;
+    }>
+  ).map((row) => ({
+    method: row.method as TopEndpoint["method"],
+    path: row.path,
+    requests: row.requests,
+    errors: row.errors,
+    errorRate: row.requests > 0 ? (row.errors / row.requests) * 100 : 0,
+    avgDuration: row.avgDuration,
+    p95Duration: row.p95Duration,
+    p99Duration: row.p99Duration,
+  }));
+};
+
+// ---------------------------------------------------------------------------
+// Error Groups
+// Fingerprints recurring errors by (method, path, status, message) so the
+// dashboard can surface "N occurrences of this error" rather than individual
+// log lines.  COUNT(*) OVER() is evaluated after GROUP BY, giving us the total
+// number of distinct groups before the LIMIT is applied in a single query.
+// ---------------------------------------------------------------------------
+
+export const getErrorGroups = async (
+  filters: ErrorGroupFilters,
+): Promise<ErrorGroupsResponse> => {
+  const {
+    serviceId,
+    period = "24h",
+    from,
+    to,
+    environment,
+    limit = 20,
+  } = filters;
+
+  const conditions = [
+    eq(logEvent.serviceId, serviceId),
+    // Only include error status codes (4xx and 5xx).
+    // This avoids including successful requests in the error group view.
+    gte(logEvent.status, 400),
+  ];
+
+  if (from && to) {
+    conditions.push(gte(logEvent.timestamp, from));
+    conditions.push(lte(logEvent.timestamp, to));
+  } else {
+    conditions.push(gte(logEvent.timestamp, periodToDate(period)));
+  }
+
+  if (environment) conditions.push(eq(logEvent.environment, environment));
+
+  const result = await db.execute(sql`
+    SELECT
+      method,
+      path,
+      status::int,
+      message,
+      COUNT(*)::int                  AS count,
+      MIN(timestamp)                 AS "firstSeen",
+      MAX(timestamp)                 AS "lastSeen",
+      -- COUNT(*) OVER() counts the number of rows in the full result set AFTER
+      -- GROUP BY but BEFORE LIMIT, so we get the total group count for free
+      -- without a separate COUNT subquery.
+      COUNT(*) OVER()::int           AS "totalGroups"
+    FROM log_event
+    WHERE ${and(...conditions)}
+    GROUP BY method, path, status, message
+    ORDER BY count DESC
+    LIMIT ${limit}
+  `);
+
+  // Extract the total distinct group count from any row (it's the same on every row).
+  const total =
+    (result.rows[0] as { totalGroups?: number } | undefined)?.totalGroups ?? 0;
+
+  return {
+    groups: (
+      result.rows as Array<{
+        method: string;
+        path: string;
+        status: number;
+        message: string | null;
+        count: number;
+        firstSeen: Date;
+        lastSeen: Date;
+        totalGroups: number;
+      }>
+    ).map(({ totalGroups: _t, ...row }) => ({
+      // Cast method to the enum type; it comes back as a plain string from raw SQL.
+      method: row.method as ErrorGroupsResponse["groups"][number]["method"],
+      path: row.path,
+      status: row.status,
+      message: row.message,
+      count: row.count,
+      firstSeen: row.firstSeen,
+      lastSeen: row.lastSeen,
+    })),
+    total,
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Logs by Request ID
+// Fetches all log events that share the same requestId, ordered
+// chronologically so the dashboard can reconstruct a full request trace.
+// No pagination: a single request trace is a bounded, small dataset.
+// A hard limit of 200 guards against edge cases (e.g. fan-out services that
+// emit many events per request).
+// ---------------------------------------------------------------------------
+
+export const getLogsByRequestId = async (
+  serviceId: string,
+  requestId: string,
+) => {
+  return await db
+    .select()
+    .from(logEvent)
+    .where(
+      and(eq(logEvent.serviceId, serviceId), eq(logEvent.requestId, requestId)),
+    )
+    // Ascending order exposes the request lifecycle from start to finish.
+    .orderBy(asc(logEvent.timestamp), asc(logEvent.id))
+    .limit(200);
 };

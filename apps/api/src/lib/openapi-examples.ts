@@ -81,4 +81,32 @@ export const dashboardExamples = {
       period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
     },
   },
+  // top-endpoints errors
+  topEndpointsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+    invalidData: {
+      sortBy:
+        'Invalid option: expected one of "requests"|"errors"|"error_rate"|"p95_duration"|"p99_duration"',
+    },
+  },
+  // error-groups errors
+  errorGroupsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+    invalidData: {
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+    },
+  },
+  // logs/by-request errors
+  requestLogsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+  },
+  // logs/slow errors
+  slowLogsValErrs: {
+    idErrors: { serviceId: "Invalid UUID" },
+    invalidData: {
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      level: 'Invalid option: expected one of "info"|"warn"|"error"|"debug"',
+      cursor: "Invalid pagination cursor",
+    },
+  },
 };
