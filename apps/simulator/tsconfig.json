@@ -7,6 +7,10 @@
     "moduleResolution": "bundler",
     "target": "ES2024",
     "lib": ["ES2024"],
+    // @types/bun is already in devDependencies. Referencing it as "bun" here
+    // tells TypeScript to load it explicitly, picking up all Bun and Node.js
+    // compatible globals (process, Bun.*, etc.) without relying on auto-discovery.
+    "types": ["bun"],
     "resolveJsonModule": true,
     "paths": {
       "@/*": ["./src/*"]
