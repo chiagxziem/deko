@@ -545,6 +545,183 @@ dashboard.get(
 );
 
 // ---------------------------------------------------------------------------
+// Slow Logs
+// A convenience wrapper around the standard /logs endpoint that pre-applies a
+// duration filter.  Callers can pass minDuration to adjust the threshold; omitting
+// it defaults to 1000 ms (1 second), which is a common SLO boundary.
+// The effective threshold is echoed back in the response so clients know which
+// cutoff was applied when they relied on the default.
+// ---------------------------------------------------------------------------
+dashboard.get(
+  "/:serviceId/logs/slow",
+  getSlowLogsDoc,
+  validator("param", z.object({ serviceId: z.uuid() }), validationHook),
+  validator(
+    "query",
+    z.object({
+      period: PeriodEnumSchema.default("24h"),
+      // minDuration has a default of 1000 ms
+      minDuration: z.coerce.number().min(1).default(1000),
+      level: LevelEnumSchema.optional(),
+      status: z.coerce.number().optional(),
+      environment: z.string().optional(),
+      method: MethodEnumSchema.optional(),
+      path: z.string().optional(),
+      to: z.iso
+        .datetime()
+        .transform((n) => new Date(n))
+        .optional(),
+      from: z.iso
+        .datetime()
+        .transform((n) => new Date(n))
+        .optional(),
+      cursor: z.string().optional(),
+      limit: z.coerce.number().min(1).max(100).default(50),
+      exactCount: z.coerce.boolean().default(false),
+    }),
+    validationHook,
+  ),
+  async (c) => {
+    const { serviceId } = c.req.valid("param");
+    const {
+      period,
+      minDuration,
+      level,
+      status,
+      environment,
+      method,
+      path,
+      to,
+      from,
+      cursor: cursorRaw,
+      limit,
+      exactCount,
+    } = c.req.valid("query");
+
+    const service = await getSingleService(serviceId);
+    if (!service) {
+      return c.json(
+        errorResponse("NOT_FOUND", "Service not found"),
+        HttpStatusCodes.NOT_FOUND,
+      );
+    }
+
+    // Decode cursor
+    let cursorTimestamp: number | undefined;
+    let cursorId: string | undefined;
+
+    if (cursorRaw) {
+      try {
+        const normalizedCursor = cursorRaw.replace(/ /g, "+");
+        const decoded = Buffer.from(normalizedCursor, "base64").toString(
+          "utf-8",
+        );
+        const [timestampStr, idStr] = decoded.split(":");
+        if (!timestampStr || !idStr) throw new Error("Invalid cursor format");
+
+        const timestamp = parseInt(timestampStr);
+        if (isNaN(timestamp) || !z.uuid().safeParse(idStr).success) {
+          throw new Error("Invalid cursor values");
+        }
+
+        cursorTimestamp = timestamp;
+        cursorId = idStr;
+      } catch {
+        return c.json(
+          errorResponse("INVALID_CURSOR", "Invalid pagination cursor"),
+          HttpStatusCodes.BAD_REQUEST,
+        );
+      }
+    }
+
+    const logs = await getServiceLogs({
+      serviceId,
+      period,
+      level,
+      status,
+      environment,
+      method,
+      path,
+      to,
+      from,
+      limit,
+      minDuration,
+      cursor:
+        cursorTimestamp && cursorId
+          ? { timestamp: new Date(cursorTimestamp), id: cursorId }
+          : undefined,
+    });
+
+    // Generate next cursor
+    let nextCursor: string | null = null;
+    if (logs.length === limit) {
+      const lastLog = logs[logs.length - 1];
+      nextCursor = Buffer.from(
+        `${lastLog.timestamp.getTime()}:${lastLog.id}`,
+      ).toString("base64");
+    }
+
+    // Optional exact count
+    let totalEstimate: number | null = null;
+    if (exactCount) {
+      const cacheKey = makeCountCacheKey({
+        serviceId,
+        period,
+        level,
+        status,
+        environment,
+        method,
+        path,
+        to,
+        from,
+        search: undefined,
+      });
+
+      const cached = logCountCache.get(cacheKey);
+      const now = Date.now();
+
+      if (cached && cached.expiresAt > now) {
+        totalEstimate = cached.value;
+      } else {
+        totalEstimate = await getServiceLogsCount({
+          serviceId,
+          period,
+          level,
+          status,
+          environment,
+          method,
+          path,
+          to,
+          from,
+          minDuration,
+        });
+        logCountCache.set(cacheKey, {
+          value: totalEstimate,
+          expiresAt: now + LOG_COUNT_CACHE_TTL_MS,
+        });
+      }
+    }
+
+    return c.json(
+      successResponse(
+        {
+          logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => log),
+          pagination: {
+            hasNext: logs.length === limit,
+            nextCursor,
+            totalEstimate,
+          },
+          // Echo the threshold so the client knows what "slow" meant for this request
+          thresholdMs: minDuration,
+        },
+        "Slow logs retrieved successfully",
+      ),
+      HttpStatusCodes.OK,
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Single Log Endpoint
 // Purpose:
 // - Returns details of one log record for drill-down interactions.
@@ -800,183 +977,6 @@ dashboard.get(
 
     return c.json(
       successResponse(result, "Error groups retrieved successfully"),
-      HttpStatusCodes.OK,
-    );
-  },
-);
-
-// ---------------------------------------------------------------------------
-// Slow Logs
-// A convenience wrapper around the standard /logs endpoint that pre-applies a
-// duration filter.  Callers can pass minDuration to adjust the threshold; omitting
-// it defaults to 1000 ms (1 second), which is a common SLO boundary.
-// The effective threshold is echoed back in the response so clients know which
-// cutoff was applied when they relied on the default.
-// ---------------------------------------------------------------------------
-dashboard.get(
-  "/:serviceId/logs/slow",
-  getSlowLogsDoc,
-  validator("param", z.object({ serviceId: z.uuid() }), validationHook),
-  validator(
-    "query",
-    z.object({
-      period: PeriodEnumSchema.default("24h"),
-      // minDuration has a default of 1000 ms
-      minDuration: z.coerce.number().min(1).default(1000),
-      level: LevelEnumSchema.optional(),
-      status: z.coerce.number().optional(),
-      environment: z.string().optional(),
-      method: MethodEnumSchema.optional(),
-      path: z.string().optional(),
-      to: z.iso
-        .datetime()
-        .transform((n) => new Date(n))
-        .optional(),
-      from: z.iso
-        .datetime()
-        .transform((n) => new Date(n))
-        .optional(),
-      cursor: z.string().optional(),
-      limit: z.coerce.number().min(1).max(100).default(50),
-      exactCount: z.coerce.boolean().default(false),
-    }),
-    validationHook,
-  ),
-  async (c) => {
-    const { serviceId } = c.req.valid("param");
-    const {
-      period,
-      minDuration,
-      level,
-      status,
-      environment,
-      method,
-      path,
-      to,
-      from,
-      cursor: cursorRaw,
-      limit,
-      exactCount,
-    } = c.req.valid("query");
-
-    const service = await getSingleService(serviceId);
-    if (!service) {
-      return c.json(
-        errorResponse("NOT_FOUND", "Service not found"),
-        HttpStatusCodes.NOT_FOUND,
-      );
-    }
-
-    // Decode cursor
-    let cursorTimestamp: number | undefined;
-    let cursorId: string | undefined;
-
-    if (cursorRaw) {
-      try {
-        const normalizedCursor = cursorRaw.replace(/ /g, "+");
-        const decoded = Buffer.from(normalizedCursor, "base64").toString(
-          "utf-8",
-        );
-        const [timestampStr, idStr] = decoded.split(":");
-        if (!timestampStr || !idStr) throw new Error("Invalid cursor format");
-
-        const timestamp = parseInt(timestampStr);
-        if (isNaN(timestamp) || !z.uuid().safeParse(idStr).success) {
-          throw new Error("Invalid cursor values");
-        }
-
-        cursorTimestamp = timestamp;
-        cursorId = idStr;
-      } catch {
-        return c.json(
-          errorResponse("INVALID_CURSOR", "Invalid pagination cursor"),
-          HttpStatusCodes.BAD_REQUEST,
-        );
-      }
-    }
-
-    const logs = await getServiceLogs({
-      serviceId,
-      period,
-      level,
-      status,
-      environment,
-      method,
-      path,
-      to,
-      from,
-      limit,
-      minDuration,
-      cursor:
-        cursorTimestamp && cursorId
-          ? { timestamp: new Date(cursorTimestamp), id: cursorId }
-          : undefined,
-    });
-
-    // Generate next cursor
-    let nextCursor: string | null = null;
-    if (logs.length === limit) {
-      const lastLog = logs[logs.length - 1];
-      nextCursor = Buffer.from(
-        `${lastLog.timestamp.getTime()}:${lastLog.id}`,
-      ).toString("base64");
-    }
-
-    // Optional exact count
-    let totalEstimate: number | null = null;
-    if (exactCount) {
-      const cacheKey = makeCountCacheKey({
-        serviceId,
-        period,
-        level,
-        status,
-        environment,
-        method,
-        path,
-        to,
-        from,
-        search: undefined,
-      });
-
-      const cached = logCountCache.get(cacheKey);
-      const now = Date.now();
-
-      if (cached && cached.expiresAt > now) {
-        totalEstimate = cached.value;
-      } else {
-        totalEstimate = await getServiceLogsCount({
-          serviceId,
-          period,
-          level,
-          status,
-          environment,
-          method,
-          path,
-          to,
-          from,
-          minDuration,
-        });
-        logCountCache.set(cacheKey, {
-          value: totalEstimate,
-          expiresAt: now + LOG_COUNT_CACHE_TTL_MS,
-        });
-      }
-    }
-
-    return c.json(
-      successResponse(
-        {
-          logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => log),
-          pagination: {
-            hasNext: logs.length === limit,
-            nextCursor,
-            totalEstimate,
-          },
-          // Echo the threshold so the client knows what "slow" meant for this request
-          thresholdMs: minDuration,
-        },
-        "Slow logs retrieved successfully",
-      ),
       HttpStatusCodes.OK,
     );
   },

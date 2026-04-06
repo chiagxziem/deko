@@ -180,7 +180,7 @@ function generateRandomLog() {
 
   return {
     level,
-    timestamp: Date.now(),
+    timestamp: new Date().toISOString(),
     environment,
     method,
     path,
