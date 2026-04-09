@@ -9,11 +9,3 @@ import { twMerge } from "tailwind-merge";
 export const cn = (...inputs: ClassValue[]): string => {
   return twMerge(clsx(inputs));
 };
-
-/**
- * URLs to variable font files used by the app (WOFF2). Useful for preloading.
- */
-export const fontsHref = [
-  "https://cdn.jsdelivr.net/fontsource/fonts/inter:vf@latest/latin-wght-normal.woff2",
-  "https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono:vf@latest/latin-wght-normal.woff2",
-];

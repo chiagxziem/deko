@@ -5,11 +5,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
-import { Toaster } from "@/components/ui/toaster";
-import { fontsHref } from "@/lib/utils";
-
 import appCss from "@/styles/app.css?url";
-import fontsCss from "@/styles/fonts.css?url";
 
 export interface AppRouterContext {
   queryClient: QueryClient;
@@ -18,9 +14,7 @@ export interface AppRouterContext {
 export const Route = createRootRouteWithContext<AppRouterContext>()({
   head: () => ({
     meta: [
-      {
-        charSet: "utf-8",
-      },
+      { charSet: "utf-8" },
       {
         name: "viewport",
         content:
@@ -36,17 +30,6 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
         rel: "stylesheet",
         href: appCss,
       },
-      {
-        rel: "stylesheet",
-        href: fontsCss,
-      },
-      ...fontsHref.map((href) => ({
-        rel: "preload",
-        href,
-        as: "font",
-        type: "font/woff2",
-        crossOrigin: "anonymous" as const,
-      })),
     ],
   }),
   shellComponent: RootDocument,
@@ -54,16 +37,15 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="dark" lang="en">
+    <html className="dark" lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
 
-      <body className="font-inter">
-        <div className="relative isolate min-h-svh bg-background text-foreground antialiased">
+      <body className="font-sans">
+        <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
           {children}
         </div>
-        <Toaster />
         <Scripts />
       </body>
     </html>
