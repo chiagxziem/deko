@@ -5,10 +5,10 @@ info:
 
 http:
   method: get
-  url: "{{BASE_URL}}/api/dashboard/:serviceId/stats/timeseries?period=24h"
+  url: "{{BASE_URL}}/api/dashboard/:serviceId/stats/timeseries?period=1h"
   params:
     - name: period
-      value: 24h
+      value: 1h
       type: query
     - name: metrics
       value: requests,errors
