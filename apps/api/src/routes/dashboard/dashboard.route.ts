@@ -63,6 +63,7 @@ const makeCountCacheKey = (params: {
   to?: Date;
   from?: Date;
   search?: string;
+  minDuration?: number;
 }) => {
   return JSON.stringify({
     ...params,
@@ -675,6 +676,9 @@ dashboard.get(
         to,
         from,
         search: undefined,
+        // Include the active slow-log threshold in the key so count cache
+        // invalidates immediately when minDuration changes.
+        minDuration,
       });
 
       const cached = logCountCache.get(cacheKey);

@@ -112,6 +112,21 @@ const periodToDate = (period: Period): Date => {
 };
 
 /**
+ * Maps each named dashboard period to a PostgreSQL interval literal.
+ * Used wherever period-based time windows are applied so bounds are always
+ * evaluated using the database clock/timezone (`now() - interval`) rather than
+ * binding app-generated Date objects to `timestamp` (without timezone) columns.
+ * Binding app-side Dates can silently shift short windows (e.g. 1h) when the
+ * PostgreSQL session timezone differs from the application runtime timezone.
+ */
+const PERIOD_TO_DB_INTERVAL: Record<Period, string> = {
+  "1h": "1 hour",
+  "24h": "24 hours",
+  "7d": "7 days",
+  "30d": "30 days",
+};
+
+/**
  * Returns the previous window for a given period length.
  *
  * Why this exists:
@@ -219,15 +234,26 @@ const getLogConditions = (filters: LogFilters) => {
   let periodEnd: Date | undefined;
 
   if (period) {
+    // Compute Date bounds for response metadata only (e.g. the period window
+    // echoed in overview stats). The actual SQL conditions use PERIOD_TO_DB_INTERVAL
+    // so the comparison is anchored to the DB clock/timezone instead of an
+    // app-bound Date parameter, which prevents short-window drift (e.g. 1h).
     periodStart = periodToDate(period);
     periodEnd = new Date();
+    conditions.push(
+      sql`${logEvent.timestamp} >= now() - ${PERIOD_TO_DB_INTERVAL[period]}::interval`,
+    );
+    conditions.push(sql`${logEvent.timestamp} <= now()`);
   } else {
-    if (from) periodStart = from;
-    if (to) periodEnd = to;
+    if (from) {
+      periodStart = from;
+      conditions.push(gte(logEvent.timestamp, from));
+    }
+    if (to) {
+      periodEnd = to;
+      conditions.push(lte(logEvent.timestamp, to));
+    }
   }
-
-  if (periodStart) conditions.push(gte(logEvent.timestamp, periodStart));
-  if (periodEnd) conditions.push(lte(logEvent.timestamp, periodEnd));
 
   // if cursor is present, we prioritize the cursor logic for pagination
   // cursor logic: (timestamp < cursorTime) ie get all logs that happened before the cursor time OR (timestamp = cursorTime AND id < cursorId) ie get all logs that happened at the same time as the cursor but with a smaller id
@@ -395,6 +421,13 @@ export const getLogTimeseries = async (filters: TimeseriesFilters) => {
     endTime = to ?? new Date();
   }
 
+  // For period-based requests (1h/24h/7d/30d), anchor both bounds to DB `now()`
+  // so all services share one authoritative time source.
+  // For custom `from`/`to` requests, keep using caller-provided Date bounds.
+  const timeRangeCondition = period
+    ? sql`timestamp >= now() - ${PERIOD_TO_DB_INTERVAL[period]}::interval AND timestamp <= now()`
+    : sql`timestamp >= ${startTime} AND timestamp <= ${endTime}`;
+
   // Build optional dimension conditions derived from the filter parameters.
   // These are added to the raw SQL so the time_bucket aggregation only considers
   // the requested slice, rather than requiring client-side post-filtering.
@@ -426,8 +459,7 @@ export const getLogTimeseries = async (filters: TimeseriesFilters) => {
       PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration)::real AS p99_duration
     FROM log_event
     WHERE service_id = ${serviceId}
-      AND timestamp >= ${startTime}
-      AND timestamp <= ${endTime}
+      AND ${timeRangeCondition}
       ${dimensionConditions.length > 0 ? sql`AND ${and(...dimensionConditions)}` : sql``}
     GROUP BY bucket
     ORDER BY bucket ASC
@@ -641,22 +673,18 @@ export const getTopEndpoints = async (
     limit = 10,
   } = filters;
 
-  // Build time-range conditions.
-  let startTime: Date;
-  let endTime: Date;
-  if (from && to) {
-    startTime = from;
-    endTime = to;
-  } else {
-    startTime = periodToDate(period);
-    endTime = new Date();
-  }
+  // Build time-range conditions using DB-relative bounds for named periods so the
+  // window is anchored to the database clock/timezone, consistent with all other
+  // period-filtered queries. Custom from/to ranges bind Date values directly.
+  const timeConditions =
+    from && to
+      ? [gte(logEvent.timestamp, from), lte(logEvent.timestamp, to)]
+      : [
+          sql`${logEvent.timestamp} >= now() - ${PERIOD_TO_DB_INTERVAL[period]}::interval`,
+          sql`${logEvent.timestamp} <= now()`,
+        ];
 
-  const conditions = [
-    eq(logEvent.serviceId, serviceId),
-    gte(logEvent.timestamp, startTime),
-    lte(logEvent.timestamp, endTime),
-  ];
+  const conditions = [eq(logEvent.serviceId, serviceId), ...timeConditions];
 
   // Optional pre-filters narrow the group by before aggregation.
   if (environment) conditions.push(eq(logEvent.environment, environment));
@@ -741,11 +769,16 @@ export const getErrorGroups = async (
     gte(logEvent.status, 400),
   ];
 
+  // Use DB-relative bounds for named periods, consistent with all other
+  // period-filtered queries. Custom from/to ranges bind Date values directly.
   if (from && to) {
     conditions.push(gte(logEvent.timestamp, from));
     conditions.push(lte(logEvent.timestamp, to));
   } else {
-    conditions.push(gte(logEvent.timestamp, periodToDate(period)));
+    conditions.push(
+      sql`${logEvent.timestamp} >= now() - ${PERIOD_TO_DB_INTERVAL[period]}::interval`,
+    );
+    conditions.push(sql`${logEvent.timestamp} <= now()`);
   }
 
   if (environment) conditions.push(eq(logEvent.environment, environment));
