@@ -7,6 +7,7 @@ import {
   PeriodType,
   TopEndpointSortBy,
 } from "@repo/db/validators/dashboard.validator";
+import { redisClient } from "@repo/redis";
 
 export type Period = PeriodType;
 export type Granularity = GranularityType;
@@ -268,4 +269,32 @@ export const getLogConditions = (filters: LogFilters) => {
     conditions.push(gte(logEvent.duration, minDuration));
 
   return { conditions, periodStart, periodEnd };
+};
+
+// ---------------------------------------------------------------------------
+// Redis-backed count cache
+// Shared across all API instances so every instance benefits from and
+// contributes to the same cache entries, with TTL managed by Redis itself.
+// ---------------------------------------------------------------------------
+
+const LOG_COUNT_CACHE_TTL_MS = 10_000;
+const LOG_COUNT_CACHE_TTL_S = Math.ceil(LOG_COUNT_CACHE_TTL_MS / 1000);
+const LOG_COUNT_CACHE_PREFIX = "log-count-cache:";
+
+export const getCountFromCache = async (
+  key: string,
+): Promise<number | null> => {
+  const raw = await redisClient.get(`${LOG_COUNT_CACHE_PREFIX}${key}`);
+  if (raw === null) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const setCountInCache = async (
+  key: string,
+  value: number,
+): Promise<void> => {
+  const fullKey = `${LOG_COUNT_CACHE_PREFIX}${key}`;
+  await redisClient.set(fullKey, value.toString());
+  await redisClient.expire(fullKey, LOG_COUNT_CACHE_TTL_S);
 };

@@ -24,7 +24,12 @@ import {
   ServiceRepository,
   type IServiceRepository,
 } from "@/repositories/service.repository";
-import { getPrevPeriod, makeCountCacheKey } from "@/services/dashboard.service";
+import {
+  getCountFromCache,
+  getPrevPeriod,
+  makeCountCacheKey,
+  setCountInCache,
+} from "@/services/dashboard.service";
 
 import {
   getErrorGroupsDoc,
@@ -38,10 +43,6 @@ import {
   getStatusCodeBreakdownDoc,
   getTopEndpointsDoc,
 } from "./dashboard.docs";
-
-// In-memory cache for count queries since they can be expensive in large datasets
-const LOG_COUNT_CACHE_TTL_MS = 10_000;
-const logCountCache = new Map<string, { value: number; expiresAt: number }>();
 
 type DashboardRouteDeps = {
   dashboardRepository: IDashboardRepository;
@@ -414,12 +415,11 @@ export const createDashboardRouter = ({
           search,
         });
 
-        const cached = logCountCache.get(cacheKey);
-        const now = Date.now();
+        const cached = await getCountFromCache(cacheKey);
 
-        if (cached && cached.expiresAt > now) {
+        if (cached !== null) {
           // if cached data exist, serve to reduce repeated count load
-          totalEstimate = cached.value;
+          totalEstimate = cached;
         } else {
           // if there's no cached data, fetch & serve fresh data
           totalEstimate = await dashboardRepository.getServiceLogsCount({
@@ -435,10 +435,7 @@ export const createDashboardRouter = ({
             search,
           });
 
-          logCountCache.set(cacheKey, {
-            value: totalEstimate,
-            expiresAt: now + LOG_COUNT_CACHE_TTL_MS,
-          });
+          await setCountInCache(cacheKey, totalEstimate);
         }
       }
 
@@ -646,11 +643,10 @@ export const createDashboardRouter = ({
           minDuration,
         });
 
-        const cached = logCountCache.get(cacheKey);
-        const now = Date.now();
+        const cached = await getCountFromCache(cacheKey);
 
-        if (cached && cached.expiresAt > now) {
-          totalEstimate = cached.value;
+        if (cached !== null) {
+          totalEstimate = cached;
         } else {
           totalEstimate = await dashboardRepository.getServiceLogsCount({
             serviceId,
@@ -664,10 +660,7 @@ export const createDashboardRouter = ({
             from,
             minDuration,
           });
-          logCountCache.set(cacheKey, {
-            value: totalEstimate,
-            expiresAt: now + LOG_COUNT_CACHE_TTL_MS,
-          });
+          await setCountInCache(cacheKey, totalEstimate);
         }
       }
 
