@@ -38,6 +38,12 @@ export interface IServiceRepository {
   ): Promise<ServiceToken | undefined>;
   getServiceByToken(token: string): Promise<Service | undefined>;
   touchServiceTokenLastUsed(token: string): Promise<void>;
+  rotateServiceToken(
+    tokenId: string,
+    serviceId: string,
+    newEncryptedToken: string,
+    newHashedToken: string,
+  ): Promise<ServiceToken | undefined>;
 }
 
 /**
@@ -213,7 +219,7 @@ export class ServiceRepository implements IServiceRepository {
   }
 
   /**
-   * Updates a service token last-used timestamp by plaintext token.
+   * Updates a service token's lastUsedAt by plaintext token.
    */
   async touchServiceTokenLastUsed(token: string) {
     const hashedToken = hashToken(token);
@@ -224,5 +230,33 @@ export class ServiceRepository implements IServiceRepository {
         lastUsedAt: new Date(),
       })
       .where(eq(serviceToken.hashedToken, hashedToken));
+  }
+
+  /**
+   * Rotates a service token by replacing its encrypted and hashed secret
+   * in-place. The token's ID, name, and metadata are preserved.
+   * Returns the updated token row, or undefined if not found.
+   */
+  async rotateServiceToken(
+    tokenId: string,
+    serviceId: string,
+    newEncryptedToken: string,
+    newHashedToken: string,
+  ) {
+    const [rotatedToken] = await db
+      .update(serviceToken)
+      .set({
+        encryptedToken: newEncryptedToken,
+        hashedToken: newHashedToken,
+      })
+      .where(
+        and(
+          eq(serviceToken.id, tokenId),
+          eq(serviceToken.serviceId, serviceId),
+        ),
+      )
+      .returning();
+
+    return rotatedToken;
   }
 }

@@ -281,3 +281,45 @@ export const deleteServiceTokenDoc = describeRoute({
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
+
+export const rotateServiceTokenDoc = describeRoute({
+  description: "Rotate a service token and generates a new secret in-place.",
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: createSuccessResponse("Service token rotated", {
+      details: "Service token rotated successfully",
+      dataSchema: ServiceTokenSelectSchema,
+    }),
+    [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
+      invalidServiceOrTokenID: {
+        summary: "Invalid service or token ID",
+        code: "INVALID_DATA",
+        details: getErrDetailsFromErrFields({
+          serviceId: "Invalid UUID",
+          tokenId: "Invalid UUID",
+        }),
+        fields: {
+          serviceId: "Invalid UUID",
+          tokenId: "Invalid UUID",
+        },
+      },
+    }),
+    [HttpStatusCodes.NOT_FOUND]: createErrorResponse(
+      "Service or token not found",
+      {
+        serviceNotFound: {
+          summary: "Service not found",
+          code: "SERVICE_NOT_FOUND",
+          details: "Service not found",
+        },
+        tokenNotFound: {
+          summary: "Token not found",
+          code: "TOKEN_NOT_FOUND",
+          details: "Token not found",
+        },
+      },
+    ),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
+  },
+});

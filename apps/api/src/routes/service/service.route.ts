@@ -26,6 +26,7 @@ import {
   deleteServiceTokenDoc,
   getServiceDoc,
   getServicesDoc,
+  rotateServiceTokenDoc,
   updateServiceDoc,
   updateServiceTokenDoc,
 } from "./service.docs";
@@ -416,6 +417,77 @@ export const createServiceRouter = ({
             status: "ok",
           },
           "Service token deleted successfully",
+        ),
+        HttpStatusCodes.OK,
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // ROTATE SERVICE TOKEN
+  // Replaces the underlying token secret in-place without changing the token's
+  // ID, name, or history. The new plaintext is returned only in this response;
+  // all subsequent reads return a masked preview.
+  // ---------------------------------------------------------------------------
+  serviceRouter.post(
+    "/:serviceId/tokens/:tokenId/rotate",
+    rotateServiceTokenDoc,
+    validator(
+      "param",
+      z.object({ serviceId: z.uuid(), tokenId: z.uuid() }),
+      validationHook,
+    ),
+    async (c) => {
+      const { serviceId, tokenId } = c.req.valid("param");
+
+      const service = await serviceRepository.getSingleService(serviceId);
+      if (!service) {
+        return c.json(
+          errorResponse("SERVICE_NOT_FOUND", "Service not found"),
+          HttpStatusCodes.NOT_FOUND,
+        );
+      }
+
+      const existingToken = await serviceRepository.getSingleServiceToken(
+        tokenId,
+        serviceId,
+      );
+      if (!existingToken) {
+        return c.json(
+          errorResponse("TOKEN_NOT_FOUND", "Token not found"),
+          HttpStatusCodes.NOT_FOUND,
+        );
+      }
+
+      const newTokenStr = stripHyphens(crypto.randomUUID());
+      const newEncryptedToken = encrypt(newTokenStr);
+      const newHashedToken = hashToken(newTokenStr);
+
+      const rotated = await serviceRepository.rotateServiceToken(
+        tokenId,
+        serviceId,
+        newEncryptedToken,
+        newHashedToken,
+      );
+
+      if (!rotated) {
+        return c.json(
+          errorResponse("TOKEN_NOT_FOUND", "Token not found"),
+          HttpStatusCodes.NOT_FOUND,
+        );
+      }
+
+      // Strip internal fields; expose new plaintext once (same pattern as create)
+      const {
+        encryptedToken: _et,
+        hashedToken: _ht,
+        ...rotatedToken
+      } = rotated;
+
+      return c.json(
+        successResponse(
+          { ...rotatedToken, token: newTokenStr },
+          "Service token rotated successfully",
         ),
         HttpStatusCodes.OK,
       );
