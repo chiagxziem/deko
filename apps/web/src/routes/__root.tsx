@@ -5,6 +5,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import appCss from "@/styles/app.css?url";
 
 export interface AppRouterContext {
@@ -43,9 +45,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
 
       <body className="font-sans">
-        <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
-          {children}
-        </div>
+        <TooltipProvider>
+          <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
+            {children}
+          </div>
+        </TooltipProvider>
         <Scripts />
       </body>
     </html>
