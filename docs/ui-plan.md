@@ -49,7 +49,7 @@ These are the main application destinations.
 - [ ] `/logs` -> logs workspace
 - [ ] `/errors` -> recurring errors and grouped failures
 - [ ] `/endpoints` -> endpoint leaderboard and performance analysis
-- [ ] `/settings` -> service configuration and token management
+- [x] `/settings` -> service configuration and token management
 
 ## Nested Route Plan
 
@@ -86,9 +86,9 @@ Notes:
 
 ### Settings
 
-- [ ] `/settings?section=general`
-- [ ] `/settings?section=tokens`
-- [ ] `/settings?section=danger`
+- [x] `/settings?section=general`
+- [x] `/settings?section=tokens`
+- [x] `/settings?section=danger`
 
 Notes:
 
@@ -99,11 +99,11 @@ Notes:
 
 ### App Shell
 
-- [ ] Global app frame
-- [ ] Persistent left sidebar navigation on desktop
-- [ ] Top header bar with page title, service switcher, period selector, and quick actions
-- [ ] Mobile nav trigger
-- [ ] Content area optimized for dashboard and data-table pages
+- [x] Global app frame
+- [x] Persistent left sidebar navigation on desktop
+- [x] Top header bar with page title, service switcher, period selector, and quick actions
+- [x] Mobile nav trigger
+- [x] Content area optimized for dashboard and data-table pages
 - [ ] Overlay-friendly layout so drawers sit above content cleanly
 
 ### Workspace Layout
@@ -238,52 +238,52 @@ Manage service-level configuration in one place.
 
 Sections:
 
-- [ ] General
-- [ ] Tokens
-- [ ] Danger Zone
+- [x] General
+- [x] Tokens
+- [x] Danger Zone
 
 #### General Section
 
 Contains:
 
-- [ ] Service name
-- [ ] Service slug display
-- [ ] Save changes action
+- [x] Service name
+- [x] Service slug display
+- [x] Save changes action
 
 #### Tokens Section
 
 Contains:
 
-- [ ] Token table
-- [ ] Name
-- [ ] Token preview
-- [ ] Created at
-- [ ] Last used at
-- [ ] Actions: create, rename, rotate, revoke
+- [x] Token table (using DataTable component)
+- [x] Name
+- [x] Token preview
+- [x] Created at (formatted with date-fns)
+- [x] Last used at (formatted with date-fns, or "Never" badge)
+- [x] Actions: create, rename, rotate, revoke
 
 #### Danger Zone Section
 
 Contains:
 
-- [ ] Delete service action
-- [ ] Confirmation flow
+- [x] Delete service action
+- [x] Confirmation flow (type service name to confirm)
 
 Use dummy data for first build:
 
-- [ ] Service metadata
-- [ ] Token rows
+- [x] Service metadata
+- [x] Token rows
 
 ## Modal / Drawer Inventory
 
 ### Must Have First
 
 - [ ] Log detail drawer
-- [ ] Create token modal
-- [ ] Rotate token modal
-- [ ] Rename token modal
-- [ ] Delete token confirmation
-- [ ] Edit service modal or inline form
-- [ ] Delete service confirmation
+- [x] Create token modal (AlertDialog after token reveal)
+- [x] Rotate token modal (AlertDialog after token reveal)
+- [x] Rename token modal
+- [x] Delete token confirmation (AlertDialog)
+- [x] Edit service modal or inline form
+- [x] Delete service confirmation (AlertDialog with name confirmation)
 
 ### Can Wait
 
@@ -294,11 +294,11 @@ Use dummy data for first build:
 
 ### Navigation and Shell
 
-- [ ] App sidebar
-- [ ] Sidebar nav item
-- [ ] Top header
-- [ ] Service switcher
-- [ ] Period selector
+- [x] App sidebar
+- [x] Sidebar nav item
+- [x] Top header
+- [x] Service switcher
+- [x] Period selector
 
 ### Data Display
 
@@ -311,6 +311,8 @@ Use dummy data for first build:
 - [ ] Endpoint leaderboard table
 - [ ] Error groups table
 - [ ] Key-value metadata block
+- [x] DataTable (generic reusable table with sorting, filtering, pagination, row actions)
+- [x] Alert component (default + destructive variants)
 
 ### Workflow Components
 
@@ -319,13 +321,13 @@ Use dummy data for first build:
 - [ ] Empty state block
 - [ ] Loading skeletons
 - [ ] Error state block
-- [ ] Token reveal card
+- [x] Token reveal card (AlertDialog with copy input)
 
 ## Recommended Build Order
 
 ### Phase 1
 
-- [ ] App shell
+- [x] App shell
 - [ ] Overview page with dummy data
 
 ### Phase 2
@@ -342,11 +344,11 @@ Use dummy data for first build:
 
 ### Phase 4
 
-- [ ] Settings page
-- [ ] General section
-- [ ] Tokens section
-- [ ] Danger Zone section
-- [ ] Token and service modals
+- [x] Settings page
+- [x] General section
+- [x] Tokens section
+- [x] Danger Zone section
+- [x] Token and service modals
 
 ## Dummy Data Requirements
 
@@ -362,8 +364,8 @@ Create a single mock data source for early UI work.
 - [ ] Selected log detail record
 - [ ] Error groups
 - [ ] Endpoint leaderboard rows
-- [ ] Service settings data
-- [ ] Token list
+- [x] Service settings data
+- [x] Token list
 
 ## Technical Notes For Future Implementation
 
@@ -371,23 +373,23 @@ Create a single mock data source for early UI work.
 - [ ] Keep the logs page mounted while nested log routes render the drawer
 - [ ] Use responsive drawer behavior: right-side sheet on desktop, bottom drawer on mobile
 - [ ] Keep dummy data shapes close to backend response shapes to reduce rewrite cost later
-- [ ] Use Shadcn primitives, but compose app-specific components instead of filling route files with raw UI primitives
-- [ ] Build reusable data cards and filter components before over-specializing individual pages
+- [x] Use Shadcn primitives, but compose app-specific components instead of filling route files with raw UI primitives
+- [x] Build reusable data cards and filter components before over-specializing individual pages
 
 ## Open Questions
 
 These are not blockers for starting UI work, but should stay visible.
 
 - [ ] Should request trace remain an action inside the drawer until trace UI exists?
-- [ ] Should service switching be global in the top bar from day one or stubbed for now?
-- [ ] Should period selection be global across pages or local per page initially?
+- [x] Should service switching be global in the top bar from day one or stubbed for now? (stubbed via service switcher in sidebar)
+- [x] Should period selection be global across pages or local per page initially? (global in header)
 - [ ] Should the logs view switcher be tabs, segmented control, or pills?
 
 ## First Slice Recommendation
 
 If starting implementation immediately, begin here:
 
-- [ ] Build app shell
+- [x] Build app shell
 - [ ] Build overview page with polished dummy data
 - [ ] Build logs workspace skeleton with view switcher
 - [ ] Build route-driven log detail drawer

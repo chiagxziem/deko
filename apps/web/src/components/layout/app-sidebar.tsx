@@ -1,0 +1,108 @@
+import {
+  AlertCircleIcon,
+  BarChartIcon,
+  Note01Icon,
+  Plug01Icon,
+  Settings01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Link, useParams, useRouterState } from "@tanstack/react-router";
+
+import { ServiceSwitcher } from "@/components/layout/service-switcher";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar";
+
+const navItems = [
+  {
+    title: "Overview",
+    to: "/services/$serviceId/overview" as const,
+    icon: BarChartIcon,
+  },
+  {
+    title: "Logs",
+    to: "/services/$serviceId/logs" as const,
+    icon: Note01Icon,
+  },
+  {
+    title: "Errors",
+    to: "/services/$serviceId/errors" as const,
+    icon: AlertCircleIcon,
+  },
+  {
+    title: "Endpoints",
+    to: "/services/$serviceId/endpoints" as const,
+    icon: Plug01Icon,
+  },
+];
+
+export function AppSidebar() {
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  });
+  const { serviceId = "" } = useParams({ strict: false });
+
+  const isActive = (page: string) => pathname.split("/").at(-1) === page;
+
+  return (
+    <Sidebar collapsible="icon" variant="sidebar">
+      <SidebarHeader>
+        <ServiceSwitcher />
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    render={<Link to={item.to} params={{ serviceId }} />}
+                    tooltip={item.title}
+                    isActive={isActive(item.to.split("/").at(-1) ?? "")}
+                  >
+                    <HugeiconsIcon icon={item.icon} size={16} />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={
+                <Link
+                  to="/services/$serviceId/settings"
+                  params={{ serviceId }}
+                  search={{
+                    section: "general",
+                  }}
+                />
+              }
+              tooltip="Settings"
+              isActive={isActive("settings")}
+            >
+              <HugeiconsIcon icon={Settings01Icon} size={16} />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}

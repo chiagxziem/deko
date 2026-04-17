@@ -1,5 +1,4 @@
 // oxlint-disable react/no-array-index-key
-
 import * as React from "react";
 import type { TooltipValueType } from "recharts";
 import * as RechartsPrimitive from "recharts";

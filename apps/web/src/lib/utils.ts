@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 /**
@@ -8,4 +9,17 @@ import { twMerge } from "tailwind-merge";
  */
 export const cn = (...inputs: ClassValue[]): string => {
   return twMerge(clsx(inputs));
+};
+
+/**
+ * Copies the provided text to the clipboard and shows a toast notification.
+ * @param text - The text to copy to the clipboard.
+ */
+export const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  } catch {
+    toast.error("Failed to copy");
+  }
 };

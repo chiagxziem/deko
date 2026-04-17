@@ -1,6 +1,5 @@
-"use client";
-
-import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react";
@@ -195,7 +194,7 @@ function CarouselPrevious({
       onClick={scrollPrev}
       {...props}
     >
-      <CaretLeftIcon />
+      <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
       <span className="sr-only">Previous slide</span>
     </Button>
   );
@@ -225,18 +224,18 @@ function CarouselNext({
       onClick={scrollNext}
       {...props}
     >
-      <CaretRightIcon />
+      <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
       <span className="sr-only">Next slide</span>
     </Button>
   );
 }
 
 export {
-  type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselPrevious,
   CarouselNext,
+  CarouselPrevious,
   useCarousel,
+  type CarouselApi,
 };

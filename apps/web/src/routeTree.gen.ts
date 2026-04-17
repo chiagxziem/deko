@@ -9,120 +9,224 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DashRouteRouteImport } from './routes/dash/route'
-import { Route as GuestRouteRouteImport } from './routes/_guest/route'
-import { Route as DashIndexRouteImport } from './routes/dash/index'
-import { Route as GuestIndexRouteImport } from './routes/_guest/index'
+import { Route as AppRouteRouteImport } from './routes/_app/route'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppServicesServiceIdRouteRouteImport } from './routes/_app/services/$serviceId/route'
+import { Route as AppServicesServiceIdSettingsRouteImport } from './routes/_app/services/$serviceId/settings'
+import { Route as AppServicesServiceIdOverviewRouteImport } from './routes/_app/services/$serviceId/overview'
+import { Route as AppServicesServiceIdLogsRouteImport } from './routes/_app/services/$serviceId/logs'
+import { Route as AppServicesServiceIdErrorsRouteImport } from './routes/_app/services/$serviceId/errors'
+import { Route as AppServicesServiceIdEndpointsRouteImport } from './routes/_app/services/$serviceId/endpoints'
 
-const DashRouteRoute = DashRouteRouteImport.update({
-  id: '/dash',
-  path: '/dash',
+const AppRouteRoute = AppRouteRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GuestRouteRoute = GuestRouteRouteImport.update({
-  id: '/_guest',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashIndexRoute = DashIndexRouteImport.update({
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DashRouteRoute,
+  getParentRoute: () => AppRouteRoute,
 } as any)
-const GuestIndexRoute = GuestIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => GuestRouteRoute,
-} as any)
+const AppServicesServiceIdRouteRoute =
+  AppServicesServiceIdRouteRouteImport.update({
+    id: '/services/$serviceId',
+    path: '/services/$serviceId',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppServicesServiceIdSettingsRoute =
+  AppServicesServiceIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AppServicesServiceIdRouteRoute,
+  } as any)
+const AppServicesServiceIdOverviewRoute =
+  AppServicesServiceIdOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => AppServicesServiceIdRouteRoute,
+  } as any)
+const AppServicesServiceIdLogsRoute =
+  AppServicesServiceIdLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => AppServicesServiceIdRouteRoute,
+  } as any)
+const AppServicesServiceIdErrorsRoute =
+  AppServicesServiceIdErrorsRouteImport.update({
+    id: '/errors',
+    path: '/errors',
+    getParentRoute: () => AppServicesServiceIdRouteRoute,
+  } as any)
+const AppServicesServiceIdEndpointsRoute =
+  AppServicesServiceIdEndpointsRouteImport.update({
+    id: '/endpoints',
+    path: '/endpoints',
+    getParentRoute: () => AppServicesServiceIdRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof GuestIndexRoute
-  '/dash': typeof DashRouteRouteWithChildren
-  '/dash/': typeof DashIndexRoute
+  '/': typeof AppIndexRoute
+  '/services/$serviceId': typeof AppServicesServiceIdRouteRouteWithChildren
+  '/services/$serviceId/endpoints': typeof AppServicesServiceIdEndpointsRoute
+  '/services/$serviceId/errors': typeof AppServicesServiceIdErrorsRoute
+  '/services/$serviceId/logs': typeof AppServicesServiceIdLogsRoute
+  '/services/$serviceId/overview': typeof AppServicesServiceIdOverviewRoute
+  '/services/$serviceId/settings': typeof AppServicesServiceIdSettingsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof GuestIndexRoute
-  '/dash': typeof DashIndexRoute
+  '/': typeof AppIndexRoute
+  '/services/$serviceId': typeof AppServicesServiceIdRouteRouteWithChildren
+  '/services/$serviceId/endpoints': typeof AppServicesServiceIdEndpointsRoute
+  '/services/$serviceId/errors': typeof AppServicesServiceIdErrorsRoute
+  '/services/$serviceId/logs': typeof AppServicesServiceIdLogsRoute
+  '/services/$serviceId/overview': typeof AppServicesServiceIdOverviewRoute
+  '/services/$serviceId/settings': typeof AppServicesServiceIdSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_guest': typeof GuestRouteRouteWithChildren
-  '/dash': typeof DashRouteRouteWithChildren
-  '/_guest/': typeof GuestIndexRoute
-  '/dash/': typeof DashIndexRoute
+  '/_app': typeof AppRouteRouteWithChildren
+  '/_app/': typeof AppIndexRoute
+  '/_app/services/$serviceId': typeof AppServicesServiceIdRouteRouteWithChildren
+  '/_app/services/$serviceId/endpoints': typeof AppServicesServiceIdEndpointsRoute
+  '/_app/services/$serviceId/errors': typeof AppServicesServiceIdErrorsRoute
+  '/_app/services/$serviceId/logs': typeof AppServicesServiceIdLogsRoute
+  '/_app/services/$serviceId/overview': typeof AppServicesServiceIdOverviewRoute
+  '/_app/services/$serviceId/settings': typeof AppServicesServiceIdSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dash' | '/dash/'
+  fullPaths:
+    | '/'
+    | '/services/$serviceId'
+    | '/services/$serviceId/endpoints'
+    | '/services/$serviceId/errors'
+    | '/services/$serviceId/logs'
+    | '/services/$serviceId/overview'
+    | '/services/$serviceId/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dash'
-  id: '__root__' | '/_guest' | '/dash' | '/_guest/' | '/dash/'
+  to:
+    | '/'
+    | '/services/$serviceId'
+    | '/services/$serviceId/endpoints'
+    | '/services/$serviceId/errors'
+    | '/services/$serviceId/logs'
+    | '/services/$serviceId/overview'
+    | '/services/$serviceId/settings'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/'
+    | '/_app/services/$serviceId'
+    | '/_app/services/$serviceId/endpoints'
+    | '/_app/services/$serviceId/errors'
+    | '/_app/services/$serviceId/logs'
+    | '/_app/services/$serviceId/overview'
+    | '/_app/services/$serviceId/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  GuestRouteRoute: typeof GuestRouteRouteWithChildren
-  DashRouteRoute: typeof DashRouteRouteWithChildren
+  AppRouteRoute: typeof AppRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/dash': {
-      id: '/dash'
-      path: '/dash'
-      fullPath: '/dash'
-      preLoaderRoute: typeof DashRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_guest': {
-      id: '/_guest'
+    '/_app': {
+      id: '/_app'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof GuestRouteRouteImport
+      preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dash/': {
-      id: '/dash/'
-      path: '/'
-      fullPath: '/dash/'
-      preLoaderRoute: typeof DashIndexRouteImport
-      parentRoute: typeof DashRouteRoute
-    }
-    '/_guest/': {
-      id: '/_guest/'
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof GuestIndexRouteImport
-      parentRoute: typeof GuestRouteRoute
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/services/$serviceId': {
+      id: '/_app/services/$serviceId'
+      path: '/services/$serviceId'
+      fullPath: '/services/$serviceId'
+      preLoaderRoute: typeof AppServicesServiceIdRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/services/$serviceId/settings': {
+      id: '/_app/services/$serviceId/settings'
+      path: '/settings'
+      fullPath: '/services/$serviceId/settings'
+      preLoaderRoute: typeof AppServicesServiceIdSettingsRouteImport
+      parentRoute: typeof AppServicesServiceIdRouteRoute
+    }
+    '/_app/services/$serviceId/overview': {
+      id: '/_app/services/$serviceId/overview'
+      path: '/overview'
+      fullPath: '/services/$serviceId/overview'
+      preLoaderRoute: typeof AppServicesServiceIdOverviewRouteImport
+      parentRoute: typeof AppServicesServiceIdRouteRoute
+    }
+    '/_app/services/$serviceId/logs': {
+      id: '/_app/services/$serviceId/logs'
+      path: '/logs'
+      fullPath: '/services/$serviceId/logs'
+      preLoaderRoute: typeof AppServicesServiceIdLogsRouteImport
+      parentRoute: typeof AppServicesServiceIdRouteRoute
+    }
+    '/_app/services/$serviceId/errors': {
+      id: '/_app/services/$serviceId/errors'
+      path: '/errors'
+      fullPath: '/services/$serviceId/errors'
+      preLoaderRoute: typeof AppServicesServiceIdErrorsRouteImport
+      parentRoute: typeof AppServicesServiceIdRouteRoute
+    }
+    '/_app/services/$serviceId/endpoints': {
+      id: '/_app/services/$serviceId/endpoints'
+      path: '/endpoints'
+      fullPath: '/services/$serviceId/endpoints'
+      preLoaderRoute: typeof AppServicesServiceIdEndpointsRouteImport
+      parentRoute: typeof AppServicesServiceIdRouteRoute
     }
   }
 }
 
-interface GuestRouteRouteChildren {
-  GuestIndexRoute: typeof GuestIndexRoute
+interface AppServicesServiceIdRouteRouteChildren {
+  AppServicesServiceIdEndpointsRoute: typeof AppServicesServiceIdEndpointsRoute
+  AppServicesServiceIdErrorsRoute: typeof AppServicesServiceIdErrorsRoute
+  AppServicesServiceIdLogsRoute: typeof AppServicesServiceIdLogsRoute
+  AppServicesServiceIdOverviewRoute: typeof AppServicesServiceIdOverviewRoute
+  AppServicesServiceIdSettingsRoute: typeof AppServicesServiceIdSettingsRoute
 }
 
-const GuestRouteRouteChildren: GuestRouteRouteChildren = {
-  GuestIndexRoute: GuestIndexRoute,
+const AppServicesServiceIdRouteRouteChildren: AppServicesServiceIdRouteRouteChildren =
+  {
+    AppServicesServiceIdEndpointsRoute: AppServicesServiceIdEndpointsRoute,
+    AppServicesServiceIdErrorsRoute: AppServicesServiceIdErrorsRoute,
+    AppServicesServiceIdLogsRoute: AppServicesServiceIdLogsRoute,
+    AppServicesServiceIdOverviewRoute: AppServicesServiceIdOverviewRoute,
+    AppServicesServiceIdSettingsRoute: AppServicesServiceIdSettingsRoute,
+  }
+
+const AppServicesServiceIdRouteRouteWithChildren =
+  AppServicesServiceIdRouteRoute._addFileChildren(
+    AppServicesServiceIdRouteRouteChildren,
+  )
+
+interface AppRouteRouteChildren {
+  AppIndexRoute: typeof AppIndexRoute
+  AppServicesServiceIdRouteRoute: typeof AppServicesServiceIdRouteRouteWithChildren
 }
 
-const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
-  GuestRouteRouteChildren,
-)
-
-interface DashRouteRouteChildren {
-  DashIndexRoute: typeof DashIndexRoute
+const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppIndexRoute: AppIndexRoute,
+  AppServicesServiceIdRouteRoute: AppServicesServiceIdRouteRouteWithChildren,
 }
 
-const DashRouteRouteChildren: DashRouteRouteChildren = {
-  DashIndexRoute: DashIndexRoute,
-}
-
-const DashRouteRouteWithChildren = DashRouteRoute._addFileChildren(
-  DashRouteRouteChildren,
+const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
+  AppRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  GuestRouteRoute: GuestRouteRouteWithChildren,
-  DashRouteRoute: DashRouteRouteWithChildren,
+  AppRouteRoute: AppRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
