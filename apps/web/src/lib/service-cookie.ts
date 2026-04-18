@@ -5,6 +5,7 @@ export type DummyService = {
   slug: string;
 };
 
+// export const DUMMY_SERVICES: DummyService[] = [];
 export const DUMMY_SERVICES: DummyService[] = [
   { id: "1", name: "Payments API", slug: "payments-api" },
   { id: "2", name: "User Service", slug: "user-service" },
@@ -32,10 +33,12 @@ export function setLastServiceId(id: string): void {
 /**
  * Resolve which service ID to use on app entry.
  * Reads the cookie, validates it against the provided services list,
- * and falls back to the first service.
+ * and falls back to the first service. Returns null when the list is empty.
  */
-export function resolveDefaultServiceId(services: DummyService[]): string {
-  if (services.length === 0) throw new Error("No services available");
+export function resolveDefaultServiceId(
+  services: DummyService[],
+): string | null {
+  if (services.length === 0) return null;
   const lastId = getLastServiceId();
   const valid = services.find((s) => s.id === lastId);
   return valid ? valid.id : services[0].id;

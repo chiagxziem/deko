@@ -33,6 +33,7 @@ export function AppHeader() {
   });
   const { serviceId = "" } = useParams({ strict: false });
 
+  // oxlint-disable-next-line unicorn/prefer-array-find
   const lastSegment = pathname.split("/").filter(Boolean).at(-1) ?? "";
   const title = PAGE_SEGMENT_TITLES[lastSegment] ?? "Deko";
 

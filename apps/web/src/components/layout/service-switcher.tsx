@@ -1,7 +1,9 @@
 import { PlusSignIcon, UnfoldMoreIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { useState } from "react";
 
+import { CreateServiceDialog } from "@/components/create-service-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +29,7 @@ export function ServiceSwitcher() {
   const { isMobile } = useSidebar();
   const { serviceId = "" } = useParams({ strict: false });
   const navigate = useNavigate();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const activeService: DummyService =
     DUMMY_SERVICES.find((s) => s.id === serviceId) ?? DUMMY_SERVICES[0];
@@ -88,7 +91,10 @@ export function ServiceSwitcher() {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="p-1.5">
+              <DropdownMenuItem
+                className="p-1.5"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
                 <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                   <HugeiconsIcon icon={PlusSignIcon} size={14} />
                 </div>
@@ -99,6 +105,10 @@ export function ServiceSwitcher() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <CreateServiceDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   );
