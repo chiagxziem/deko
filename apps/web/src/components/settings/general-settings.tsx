@@ -18,7 +18,7 @@ const DUMMY_SERVICE = {
   slug: "production-api",
 };
 
-export function GeneralSection() {
+export function GeneralSettings() {
   const form = useForm({
     defaultValues: {
       name: DUMMY_SERVICE.name,

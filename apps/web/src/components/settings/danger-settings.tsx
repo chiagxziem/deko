@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 // Dummy data — replace with real API data when wiring
 const DUMMY_SERVICE_NAME = "Production API";
 
-export function DangerSection() {
+export function DangerSettings() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <div>

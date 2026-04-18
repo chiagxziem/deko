@@ -6,9 +6,9 @@ import {
 } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { DangerSection } from "@/components/settings/danger-section";
-import { GeneralSection } from "@/components/settings/general-section";
-import { TokensSection } from "@/components/settings/tokens-section";
+import { DangerSettings } from "@/components/settings/danger-settings";
+import { GeneralSettings } from "@/components/settings/general-settings";
+import { TokensSettings } from "@/components/settings/tokens-settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const settingsSearchSchema = z.object({
@@ -58,13 +58,13 @@ function SettingsPage() {
           <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
         <TabsContent value="general">
-          <GeneralSection />
+          <GeneralSettings />
         </TabsContent>
         <TabsContent value="tokens">
-          <TokensSection />
+          <TokensSettings />
         </TabsContent>
         <TabsContent value="danger">
-          <DangerSection />
+          <DangerSettings />
         </TabsContent>
       </Tabs>
 
@@ -81,13 +81,13 @@ function SettingsPage() {
           <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
         <TabsContent value="general" className="pb-16">
-          <GeneralSection />
+          <GeneralSettings />
         </TabsContent>
         <TabsContent value="tokens" className="pb-16">
-          <TokensSection />
+          <TokensSettings />
         </TabsContent>
         <TabsContent value="danger" className="pb-16">
-          <DangerSection />
+          <DangerSettings />
         </TabsContent>
       </Tabs>
     </div>
