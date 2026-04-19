@@ -48,7 +48,7 @@ export const createIngestRouter = ({ serviceRepository }: IngestRouteDeps) => {
     validator(
       "header",
       z.object({
-        "x-deko-service-token": z.string().length(32),
+        "x-deko-service-token": z.string().length(40),
       }),
       validationHook,
     ),

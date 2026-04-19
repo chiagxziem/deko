@@ -1,20 +1,17 @@
+import { z } from "zod";
 import { create } from "zustand";
 
-export type TokenDialogPayload = {
-  id: string;
-  name: string;
-  preview: string;
-  createdAt: string;
-  lastUsedAt: string | null;
-};
+import { ServiceTokenPublicSchema } from "@repo/db/validators/service.validator";
+
+export type TokenDialogPayload = z.infer<typeof ServiceTokenPublicSchema>;
 
 export type AppDialogState =
   | { type: "create-service" }
-  | { type: "create-token" }
+  | { type: "create-token"; serviceId: string }
   | { type: "rename-token"; token: TokenDialogPayload }
   | { type: "rotate-token"; token: TokenDialogPayload }
   | { type: "revoke-token"; token: TokenDialogPayload }
-  | { type: "delete-service"; serviceName: string };
+  | { type: "delete-service"; serviceId: string; serviceName: string };
 
 type DialogStore = {
   activeDialog: AppDialogState | null;

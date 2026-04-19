@@ -1,5 +1,8 @@
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,13 +23,39 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { queryKeys } from "@/lib/query-keys";
+import { handleError } from "@/lib/utils";
+import {
+  $deleteService,
+  $getSingleService,
+  singleServiceQueryOptions,
+} from "@/server/services";
 import { useDialogStore } from "@/stores/dialog-store";
 
-// Dummy data — replace with real API data when wiring
-const DUMMY_SERVICE_NAME = "Production API";
-
 export function DangerSettings() {
+  const { serviceId } = useParams({ from: "/_app/services/$serviceId" });
+  const getSingleService = useServerFn($getSingleService);
+
   const openDialog = useDialogStore((s) => s.openDialog);
+
+  const {
+    data: service,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    ...singleServiceQueryOptions(serviceId),
+    queryFn: () => getSingleService({ data: serviceId }),
+  });
+
+  if (isPending) {
+    return <DangerSettingsSkeleton />;
+  }
+
+  if (isError || !service) {
+    return <DangerSettingsError refetch={refetch} />;
+  }
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -51,7 +80,8 @@ export function DangerSettings() {
             onClick={() =>
               openDialog({
                 type: "delete-service",
-                serviceName: DUMMY_SERVICE_NAME,
+                serviceId: service.id,
+                serviceName: service.name,
               })
             }
           >
@@ -64,29 +94,43 @@ export function DangerSettings() {
 }
 
 export function DeleteServiceDialogHost() {
+  const navigate = useNavigate();
+  const deleteService = useServerFn($deleteService);
+  const queryClient = useQueryClient();
+
   const activeDialog = useDialogStore((s) => s.activeDialog);
   const closeDialog = useDialogStore((s) => s.closeDialog);
 
-  const open = activeDialog?.type === "delete-service";
-  const serviceName =
-    activeDialog?.type === "delete-service"
-      ? activeDialog.serviceName
-      : DUMMY_SERVICE_NAME;
-
-  const [isPending, setIsPending] = useState(false);
   const [confirmValue, setConfirmValue] = useState("");
+
+  const open = activeDialog?.type === "delete-service";
+  const serviceName = open ? activeDialog.serviceName : "";
+  const serviceId = open ? activeDialog.serviceId : null;
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: deleteService,
+    onSuccess: async () => {
+      toast.success("Service deleted");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.services() });
+      if (serviceId) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.service(serviceId),
+        });
+      }
+      closeDialog();
+      setConfirmValue("");
+      await navigate({ to: "/get-started" });
+    },
+    onError: (err) => {
+      handleError(err, "Failed to delete service");
+    },
+  });
 
   const isConfirmed = confirmValue === serviceName;
 
   async function handleDelete() {
-    if (!isConfirmed) return;
-    setIsPending(true);
-    // TODO: wire to DELETE /api/services/:id
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Service deleted");
-    setIsPending(false);
-    closeDialog();
-    setConfirmValue("");
+    if (!isConfirmed || !serviceId) return;
+    await deleteServiceMutation.mutateAsync({ data: serviceId });
   }
 
   function handleOpenChange(next: boolean) {
@@ -130,7 +174,7 @@ export function DeleteServiceDialogHost() {
           <Button
             size="sm"
             variant="outline"
-            disabled={isPending}
+            disabled={deleteServiceMutation.isPending}
             onClick={() => closeDialog()}
           >
             Cancel
@@ -138,13 +182,59 @@ export function DeleteServiceDialogHost() {
           <Button
             size="sm"
             variant="destructive"
-            disabled={!isConfirmed || isPending}
+            disabled={!isConfirmed || deleteServiceMutation.isPending}
             onClick={handleDelete}
           >
-            {isPending ? "Deleting…" : "Delete service"}
+            {deleteServiceMutation.isPending ? "Deleting…" : "Delete service"}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function DangerSettingsSkeleton() {
+  return (
+    <div className="flex max-w-2xl flex-col gap-6">
+      <div>
+        <h2 className="text-sm font-semibold">Danger Zone</h2>
+        <p className="text-xs text-muted-foreground">
+          Irreversible actions for this service
+        </p>
+      </div>
+
+      <Skeleton className="h-20 w-full" />
+    </div>
+  );
+}
+
+function DangerSettingsError({ refetch }: { refetch: () => void }) {
+  return (
+    <div className="flex max-w-2xl flex-col gap-6">
+      <div>
+        <h2 className="text-sm font-semibold">Danger Zone</h2>
+        <p className="text-xs text-muted-foreground">
+          Irreversible actions for this service
+        </p>
+      </div>
+
+      <Alert variant="destructive">
+        <HugeiconsIcon icon={AlertCircleIcon} size={16} />
+        <AlertTitle>Failed to load service</AlertTitle>
+        <AlertDescription>
+          We couldn&apos;t load this service right now. Try again.
+        </AlertDescription>
+      </Alert>
+
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="w-fit"
+        onClick={refetch}
+      >
+        Retry
+      </Button>
+    </div>
   );
 }

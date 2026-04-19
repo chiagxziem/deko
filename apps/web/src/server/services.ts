@@ -2,7 +2,11 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { ServiceSelectSchema } from "@repo/db/validators/service.validator";
+import {
+  ServiceSelectSchema,
+  ServiceTokenPublicSchema,
+  ServiceTokenSelectSchema,
+} from "@repo/db/validators/service.validator";
 
 import { $getLastServiceId, $setLastServiceId } from "@/lib/cookies";
 import { $fetch, $fetchAndThrow } from "@/lib/fetch";
@@ -54,7 +58,7 @@ export const servicesQueryOptions = () =>
 
 // ————— create service server fn ———————————————————
 export const $createService = createServerFn({ method: "POST" })
-  .inputValidator(z.string())
+  .inputValidator(z.string().min(1))
   .handler(async ({ data: name }) => {
     const data = await $fetchAndThrow("/services", {
       method: "POST",
@@ -71,7 +75,11 @@ export const $getSingleService = createServerFn()
   .handler(async ({ data: serviceId }) => {
     const { data, error } = await $fetch("/services/:serviceId", {
       params: { serviceId },
-      output: successResSchema(ServiceSelectSchema),
+      output: successResSchema(
+        ServiceSelectSchema.extend({
+          tokens: z.array(ServiceTokenPublicSchema),
+        }),
+      ),
     });
 
     if (error) {
@@ -90,13 +98,111 @@ export const singleServiceQueryOptions = (serviceId: string) =>
 
 // ————— update service server fn ———————————————————
 export const $updateService = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ name: z.string(), serviceId: z.uuid() }))
+  .inputValidator(z.object({ name: z.string().min(1), serviceId: z.uuid() }))
   .handler(async ({ data: { name, serviceId } }) => {
     const data = await $fetchAndThrow("/services/:serviceId", {
       method: "PATCH",
       params: { serviceId },
       body: { name },
-      output: successResSchema(ServiceSelectSchema),
+      output: successResSchema(
+        ServiceSelectSchema.extend({
+          tokens: z.array(ServiceTokenPublicSchema),
+        }),
+      ),
+    });
+
+    return data.data;
+  });
+
+// ————— delete service server fn ———————————————————
+export const $deleteService = createServerFn({ method: "POST" })
+  .inputValidator(z.uuid())
+  .handler(async ({ data: serviceId }) => {
+    const data = await $fetchAndThrow("/services/:serviceId", {
+      method: "DELETE",
+      params: { serviceId },
+      output: successResSchema(
+        z.object({
+          status: z.literal("ok"),
+        }),
+      ),
+    });
+
+    return data.data;
+  });
+
+// ————— create service token server fn ———————————————————
+export const $createServiceToken = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ name: z.string().min(1), serviceId: z.uuid() }))
+  .handler(async ({ data: { name, serviceId } }) => {
+    const data = await $fetchAndThrow("/services/:serviceId/tokens", {
+      method: "POST",
+      params: { serviceId },
+      body: { name },
+      output: successResSchema(ServiceTokenSelectSchema),
+    });
+
+    return data.data;
+  });
+
+// ————— update service token server fn ———————————————————
+export const $updateServiceToken = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      name: z.string().min(1),
+      serviceId: z.uuid(),
+      tokenId: z.uuid(),
+    }),
+  )
+  .handler(async ({ data: { name, serviceId, tokenId } }) => {
+    const data = await $fetchAndThrow("/services/:serviceId/tokens/:tokenId", {
+      method: "PATCH",
+      params: { serviceId, tokenId },
+      body: { name },
+      output: successResSchema(ServiceTokenPublicSchema),
+    });
+
+    return data.data;
+  });
+
+// ————— rotate service token server fn ———————————————————
+export const $rotateServiceToken = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      serviceId: z.uuid(),
+      tokenId: z.uuid(),
+    }),
+  )
+  .handler(async ({ data: { serviceId, tokenId } }) => {
+    const data = await $fetchAndThrow(
+      "/services/:serviceId/tokens/:tokenId/rotate",
+      {
+        method: "POST",
+        params: { serviceId, tokenId },
+        output: successResSchema(ServiceTokenSelectSchema),
+      },
+    );
+
+    return data.data;
+  });
+
+// ————— delete service token server fn ———————————————————
+export const $deleteServiceToken = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      serviceId: z.uuid(),
+      tokenId: z.uuid(),
+    }),
+  )
+  .handler(async ({ data: { serviceId, tokenId } }) => {
+    const data = await $fetchAndThrow("/services/:serviceId/tokens/:tokenId", {
+      method: "DELETE",
+      params: { serviceId, tokenId },
+      output: successResSchema(
+        z.object({
+          status: z.literal("ok"),
+        }),
+      ),
     });
 
     return data.data;

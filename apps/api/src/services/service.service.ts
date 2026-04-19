@@ -30,12 +30,22 @@ export const generateUniqueSlug = (
 
 /**
  * Masks token preview by showing only last 4 characters.
- * Irreversible transformation used in API responses to prevent plaintext leak.
+ * Uses a short fixed mask so previews stay compact in the UI.
  */
 export const maskTokenPreview = (token: string): string => {
+  const prefix = "deko_sk_";
+  const maskLength = 8;
   const visibleLength = 4;
+
+  if (token.startsWith(prefix)) {
+    const rest = token.slice(prefix.length);
+    const visiblePart = rest.slice(-visibleLength);
+    const maskedPart = "*".repeat(maskLength);
+    return `${prefix}${maskedPart}${visiblePart}`;
+  }
+
   const visiblePart = token.slice(-visibleLength);
-  return `${"*".repeat(Math.max(0, token.length - visibleLength))}${visiblePart}`;
+  return `${"*".repeat(maskLength)}${visiblePart}`;
 };
 
 /**

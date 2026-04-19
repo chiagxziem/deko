@@ -70,7 +70,6 @@ function GeneralSettingsForm({
       await queryClient.invalidateQueries({
         queryKey: queryKeys.service(service.id),
       });
-      // form.reset();
     },
     onError: (err) => {
       handleError(err, "Failed to update service");

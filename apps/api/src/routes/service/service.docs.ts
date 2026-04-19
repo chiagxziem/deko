@@ -84,7 +84,9 @@ export const updateServiceDoc = describeRoute({
   responses: {
     [HttpStatusCodes.OK]: createSuccessResponse("Service updated", {
       details: "Service updated successfully",
-      dataSchema: ServiceSelectSchema,
+      dataSchema: ServiceSelectSchema.extend({
+        tokens: z.array(ServiceTokenPublicSchema),
+      }),
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidServiceID: {
@@ -245,7 +247,7 @@ export const deleteServiceTokenDoc = describeRoute({
     [HttpStatusCodes.OK]: createSuccessResponse("Service token deleted", {
       details: "Service token deleted successfully",
       dataSchema: z.object({
-        status: z.string(),
+        status: z.literal("ok"),
       }),
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {

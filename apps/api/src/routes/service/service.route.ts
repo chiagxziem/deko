@@ -253,7 +253,7 @@ export const createServiceRouter = ({
       }
 
       // Generate random service token string
-      const serviceTokenStr = stripHyphens(crypto.randomUUID());
+      const serviceTokenStr = `deko_sk_${stripHyphens(crypto.randomUUID())}`;
 
       // create encrypted and hashed versions for storage
       const encryptedServiceTokenStr = encrypt(serviceTokenStr);
@@ -459,7 +459,7 @@ export const createServiceRouter = ({
         );
       }
 
-      const newTokenStr = stripHyphens(crypto.randomUUID());
+      const newTokenStr = `deko_sk_${stripHyphens(crypto.randomUUID())}`;
       const newEncryptedToken = encrypt(newTokenStr);
       const newHashedToken = hashToken(newTokenStr);
 
