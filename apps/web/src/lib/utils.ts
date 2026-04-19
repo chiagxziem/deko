@@ -1,6 +1,9 @@
+import { BetterFetchError } from "@better-fetch/fetch";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
+
+import { AppBetterFetchError } from "./error";
 
 /**
  * Merges class names using clsx and resolves Tailwind conflicts with twMerge.
@@ -21,5 +24,19 @@ export const copyToClipboard = async (text: string) => {
     toast.success("Copied to clipboard");
   } catch {
     toast.error("Failed to copy");
+  }
+};
+
+/**
+ * Handles errors and shows a toast notification with a default message if necessary.
+ * @param err - The error object to handle.
+ * @param defaultMessage - The default message to show if the error does not have specific details.
+ */
+export const handleError = (err: Error, defaultMessage: string) => {
+  if (err instanceof BetterFetchError) {
+    const appErr = err as AppBetterFetchError;
+    toast.error(appErr.error?.details ?? defaultMessage);
+  } else {
+    toast.error(defaultMessage);
   }
 };

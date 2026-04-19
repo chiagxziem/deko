@@ -34,7 +34,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -57,6 +56,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { copyToClipboard } from "@/lib/utils";
+import { type TokenDialogPayload, useDialogStore } from "@/stores/dialog-store";
 
 // Dummy data — replace with real API data when wiring
 type Token = {
@@ -147,6 +147,8 @@ const columns: ColumnDef<Token>[] = [
 // ── Tokens Section ───────────────────────────────────────────────────────────
 
 export function TokensSettings() {
+  const openDialog = useDialogStore((s) => s.openDialog);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
@@ -156,7 +158,14 @@ export function TokensSettings() {
             Manage API tokens for this service.
           </p>
         </div>
-        <CreateTokenDialog />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => openDialog({ type: "create-token" })}
+        >
+          <HugeiconsIcon icon={PlusSignIcon} size={12} />
+          Create token
+        </Button>
       </div>
 
       <DataTable
@@ -170,9 +179,12 @@ export function TokensSettings() {
 
 // ── Create Token Dialog ──────────────────────────────────────────────────────
 
-function CreateTokenDialog() {
-  const [open, setOpen] = useState(false);
+function CreateTokenDialogHost() {
+  const activeDialog = useDialogStore((s) => s.activeDialog);
+  const closeDialog = useDialogStore((s) => s.closeDialog);
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
+
+  const open = activeDialog?.type === "create-token";
 
   const form = useForm({
     defaultValues: { name: "" },
@@ -187,22 +199,21 @@ function CreateTokenDialog() {
   });
 
   function handleClose() {
-    setOpen(false);
+    closeDialog();
     setRevealedToken(null);
     form.reset();
   }
 
   return (
     <>
-      <Dialog open={open && !revealedToken} onOpenChange={setOpen}>
-        <DialogTrigger
-          render={
-            <Button size="sm" variant="outline">
-              <HugeiconsIcon icon={PlusSignIcon} size={12} />
-              Create token
-            </Button>
+      <Dialog
+        open={open && !revealedToken}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            handleClose();
           }
-        />
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create token</DialogTitle>
@@ -285,7 +296,14 @@ function CreateTokenDialog() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={open && !!revealedToken} onOpenChange={setOpen}>
+      <AlertDialog
+        open={open && !!revealedToken}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            handleClose();
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Token created</AlertDialogTitle>
@@ -325,27 +343,32 @@ function CreateTokenDialog() {
 
 // ── Rename Token Dialog ──────────────────────────────────────────────────────
 
-function RenameTokenDialog({
-  token,
-  open,
-  onOpenChange,
-}: {
-  token: Token;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+function RenameTokenDialogHost() {
+  const activeDialog = useDialogStore((s) => s.activeDialog);
+  const closeDialog = useDialogStore((s) => s.closeDialog);
+
+  const open = activeDialog?.type === "rename-token";
+  const token = open ? activeDialog.token : null;
+
+  if (!token) return null;
+
   const form = useForm({
     defaultValues: { name: token.name },
     onSubmit: async ({ value }) => {
       // TODO: wire to PATCH /api/services/:id/tokens/:tokenId
       await new Promise((r) => setTimeout(r, 600));
       toast.success(`Token renamed to "${value.name}"`);
-      onOpenChange(false);
+      closeDialog();
     },
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) closeDialog();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Rename token</DialogTitle>
@@ -429,36 +452,40 @@ function RenameTokenDialog({
 
 // ── Rotate Token Dialog ──────────────────────────────────────────────────────
 
-function RotateTokenDialog({
-  token,
-  open,
-  onOpenChange,
-}: {
-  token: Token;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+function RotateTokenDialogHost() {
+  const activeDialog = useDialogStore((s) => s.activeDialog);
+  const closeDialog = useDialogStore((s) => s.closeDialog);
   const [isPending, setIsPending] = useState(false);
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
+
+  const open = activeDialog?.type === "rotate-token";
+  const token = open ? activeDialog.token : null;
+
+  if (!token) return null;
 
   async function handleRotate() {
     setIsPending(true);
     // TODO: wire to POST /api/services/:id/tokens/:tokenId/rotate
     await new Promise((r) => setTimeout(r, 600));
     setRevealedToken(
-      `deko_sk_${"x".repeat(32)}${token.name.slice(0, 4).toLowerCase().replace(/\s/g, "_")}`,
+      `deko_sk_${"x".repeat(32)}${token?.name.slice(0, 4).toLowerCase().replace(/\s/g, "_")}`,
     );
     setIsPending(false);
   }
 
   function handleClose() {
-    onOpenChange(false);
+    closeDialog();
     setRevealedToken(null);
   }
 
   return (
     <>
-      <Dialog open={open && !revealedToken} onOpenChange={onOpenChange}>
+      <Dialog
+        open={open && !revealedToken}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) handleClose();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rotate token</DialogTitle>
@@ -485,7 +512,12 @@ function RotateTokenDialog({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={open && !!revealedToken} onOpenChange={onOpenChange}>
+      <AlertDialog
+        open={open && !!revealedToken}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) handleClose();
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Token rotated</AlertDialogTitle>
@@ -526,28 +558,32 @@ function RotateTokenDialog({
 
 // ── Revoke Token Dialog ──────────────────────────────────────────────────────
 
-function RevokeTokenDialog({
-  token,
-  open,
-  onOpenChange,
-}: {
-  token: Token;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+function RevokeTokenDialogHost() {
+  const activeDialog = useDialogStore((s) => s.activeDialog);
+  const closeDialog = useDialogStore((s) => s.closeDialog);
   const [isPending, setIsPending] = useState(false);
+
+  const open = activeDialog?.type === "revoke-token";
+  const token = open ? activeDialog.token : null;
+
+  if (!token) return null;
 
   async function handleRevoke() {
     setIsPending(true);
     // TODO: wire to DELETE /api/services/:id/tokens/:tokenId
     await new Promise((r) => setTimeout(r, 600));
-    toast.success(`Token "${token.name}" revoked`);
+    toast.success(`Token "${token?.name}" revoked`);
     setIsPending(false);
-    onOpenChange(false);
+    closeDialog();
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) closeDialog();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Revoke token</AlertDialogTitle>
@@ -563,7 +599,7 @@ function RevokeTokenDialog({
             size="sm"
             variant="outline"
             disabled={isPending}
-            onClick={() => onOpenChange(false)}
+            onClick={() => closeDialog()}
           >
             Cancel
           </Button>
@@ -584,55 +620,58 @@ function RevokeTokenDialog({
 // ── Token Row Actions ────────────────────────────────────────────────────────
 
 function TokenRowActions({ token }: { token: Token }) {
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [rotateOpen, setRotateOpen] = useState(false);
-  const [revokeOpen, setRevokeOpen] = useState(false);
+  const openDialog = useDialogStore((s) => s.openDialog);
+
+  const tokenPayload: TokenDialogPayload = token;
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button variant="ghost" size="icon-sm" aria-label="Token actions" />
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon-sm" aria-label="Token actions" />
+        }
+      >
+        <HugeiconsIcon icon={MoreHorizontalIcon} size={16} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() =>
+            openDialog({ type: "rename-token", token: tokenPayload })
           }
         >
-          <HugeiconsIcon icon={MoreHorizontalIcon} size={16} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setRenameOpen(true)}>
-            <HugeiconsIcon icon={PencilEdit01Icon} size={12} />
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setRotateOpen(true)}>
-            <HugeiconsIcon icon={Refresh01Icon} size={12} />
-            Rotate
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setRevokeOpen(true)}
-            variant="destructive"
-          >
-            <HugeiconsIcon icon={Delete02Icon} size={12} />
-            Revoke
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <HugeiconsIcon icon={PencilEdit01Icon} size={12} />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() =>
+            openDialog({ type: "rotate-token", token: tokenPayload })
+          }
+        >
+          <HugeiconsIcon icon={Refresh01Icon} size={12} />
+          Rotate
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() =>
+            openDialog({ type: "revoke-token", token: tokenPayload })
+          }
+        >
+          <HugeiconsIcon icon={Delete02Icon} size={12} />
+          Revoke
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
-      <RenameTokenDialog
-        token={token}
-        open={renameOpen}
-        onOpenChange={setRenameOpen}
-      />
-      <RotateTokenDialog
-        token={token}
-        open={rotateOpen}
-        onOpenChange={setRotateOpen}
-      />
-      <RevokeTokenDialog
-        token={token}
-        open={revokeOpen}
-        onOpenChange={setRevokeOpen}
-      />
+export function TokenDialogsHost() {
+  return (
+    <>
+      <CreateTokenDialogHost />
+      <RenameTokenDialogHost />
+      <RotateTokenDialogHost />
+      <RevokeTokenDialogHost />
     </>
   );
 }

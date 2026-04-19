@@ -20,11 +20,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useDialogStore } from "@/stores/dialog-store";
 
 // Dummy data — replace with real API data when wiring
 const DUMMY_SERVICE_NAME = "Production API";
 
 export function DangerSettings() {
+  const openDialog = useDialogStore((s) => s.openDialog);
+
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <div>
@@ -42,19 +45,38 @@ export function DangerSettings() {
           with this service. This cannot be recovered.
         </AlertDescription>
         <AlertAction>
-          <DeleteServiceDialog />
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() =>
+              openDialog({
+                type: "delete-service",
+                serviceName: DUMMY_SERVICE_NAME,
+              })
+            }
+          >
+            Delete service
+          </Button>
         </AlertAction>
       </Alert>
     </div>
   );
 }
 
-function DeleteServiceDialog() {
-  const [open, setOpen] = useState(false);
+export function DeleteServiceDialogHost() {
+  const activeDialog = useDialogStore((s) => s.activeDialog);
+  const closeDialog = useDialogStore((s) => s.closeDialog);
+
+  const open = activeDialog?.type === "delete-service";
+  const serviceName =
+    activeDialog?.type === "delete-service"
+      ? activeDialog.serviceName
+      : DUMMY_SERVICE_NAME;
+
   const [isPending, setIsPending] = useState(false);
   const [confirmValue, setConfirmValue] = useState("");
 
-  const isConfirmed = confirmValue === DUMMY_SERVICE_NAME;
+  const isConfirmed = confirmValue === serviceName;
 
   async function handleDelete() {
     if (!isConfirmed) return;
@@ -63,77 +85,66 @@ function DeleteServiceDialog() {
     await new Promise((r) => setTimeout(r, 800));
     toast.success("Service deleted");
     setIsPending(false);
-    setOpen(false);
+    closeDialog();
+    setConfirmValue("");
   }
 
   function handleOpenChange(next: boolean) {
-    setOpen(next);
+    if (!next) closeDialog();
     if (!next) setConfirmValue("");
   }
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="destructive"
-        disabled={isPending}
-        onClick={() => setOpen(true)}
-      >
-        Delete service
-      </Button>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete service</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete <strong>{serviceName}</strong> and all
+            its logs, error groups, and tokens. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
-      <AlertDialog open={open} onOpenChange={handleOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete service</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <strong>{DUMMY_SERVICE_NAME}</strong>{" "}
-              and all its logs, error groups, and tokens. This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="confirm-delete">
+              Type{" "}
+              <span className="font-mono font-semibold text-foreground">
+                {serviceName}
+              </span>{" "}
+              to confirm
+            </FieldLabel>
+            <Input
+              id="confirm-delete"
+              type="text"
+              autoComplete="off"
+              placeholder={serviceName}
+              value={confirmValue}
+              onChange={(e) => setConfirmValue(e.target.value)}
+              aria-label="Confirm service name"
+            />
+          </Field>
+        </FieldGroup>
 
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="confirm-delete">
-                Type{" "}
-                <span className="font-mono font-semibold text-foreground">
-                  {DUMMY_SERVICE_NAME}
-                </span>{" "}
-                to confirm
-              </FieldLabel>
-              <Input
-                id="confirm-delete"
-                type="text"
-                autoComplete="off"
-                placeholder={DUMMY_SERVICE_NAME}
-                value={confirmValue}
-                onChange={(e) => setConfirmValue(e.target.value)}
-                aria-label="Confirm service name"
-              />
-            </Field>
-          </FieldGroup>
-
-          <AlertDialogFooter>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isPending}
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={!isConfirmed || isPending}
-              onClick={handleDelete}
-            >
-              {isPending ? "Deleting…" : "Delete service"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        <AlertDialogFooter>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isPending}
+            onClick={() => closeDialog()}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={!isConfirmed || isPending}
+            onClick={handleDelete}
+          >
+            {isPending ? "Deleting…" : "Delete service"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

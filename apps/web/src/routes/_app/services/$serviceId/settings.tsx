@@ -29,11 +29,11 @@ function SettingsPage() {
   });
   const navigate = useNavigate();
 
-  const handleTabChange = async (value: unknown) => {
+  const handleTabChange = async (value: "general" | "tokens" | "danger") => {
     await navigate({
       to: "/services/$serviceId/settings",
       params: { serviceId },
-      search: { section: value as "general" | "tokens" | "danger" },
+      search: { section: value },
     });
   };
 

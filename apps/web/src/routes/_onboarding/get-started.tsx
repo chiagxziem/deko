@@ -6,15 +6,18 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
 
-import { CreateServiceDialog } from "@/components/create-service-dialog";
 import { Button } from "@/components/ui/button";
-import { DUMMY_SERVICES } from "@/lib/service-cookie";
+import { servicesQueryOptions } from "@/server/services";
+import { useDialogStore } from "@/stores/dialog-store";
 
-export const Route = createFileRoute("/get-started")({
-  beforeLoad: () => {
-    if (DUMMY_SERVICES.length > 0) {
+export const Route = createFileRoute("/_onboarding/get-started")({
+  beforeLoad: async ({ context }) => {
+    const services = await context.queryClient.fetchQuery(
+      servicesQueryOptions(),
+    );
+
+    if (services && services.length > 0) {
       throw redirect({ to: "/" });
     }
   },
@@ -40,7 +43,7 @@ const features = [
 ];
 
 function GetStartedPage() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const openDialog = useDialogStore((s) => s.openDialog);
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-6 py-16">
@@ -81,15 +84,10 @@ function GetStartedPage() {
         </div>
 
         <div className="mt-8">
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => openDialog({ type: "create-service" })}>
             Create service
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </Button>
-
-          <CreateServiceDialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          />
         </div>
       </div>
     </div>

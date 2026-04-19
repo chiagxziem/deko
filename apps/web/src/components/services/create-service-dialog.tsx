@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -15,27 +15,17 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { setLastServiceId } from "@/lib/service-cookie";
+import { $setLastService } from "@/server/services";
+import { useDialogStore } from "@/stores/dialog-store";
 
-export function CreateServiceDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const [internalOpen, setInternalOpen] = useState(false);
+export function CreateServiceDialog() {
   const navigate = useNavigate();
+  const setLastService = useServerFn($setLastService);
 
-  const isControlled = typeof open === "boolean";
-  const dialogOpen = isControlled ? open : internalOpen;
+  const activeDialog = useDialogStore((s) => s.activeDialog);
+  const closeDialog = useDialogStore((s) => s.closeDialog);
 
-  const setDialogOpen = (nextOpen: boolean) => {
-    onOpenChange?.(nextOpen);
-    if (!isControlled) {
-      setInternalOpen(nextOpen);
-    }
-  };
+  const dialogOpen = activeDialog?.type === "create-service";
 
   const form = useForm({
     defaultValues: { name: "" },
@@ -45,8 +35,8 @@ export function CreateServiceDialog({
 
       // Simulate new service creation — replace with real response ID
       const newId = crypto.randomUUID();
-      setLastServiceId(newId);
-      setDialogOpen(false);
+      await setLastService({ data: newId });
+      closeDialog();
       toast.success(`Service "${value.name}" created`);
 
       void navigate({
@@ -60,7 +50,7 @@ export function CreateServiceDialog({
     <Dialog
       open={dialogOpen}
       onOpenChange={(nextOpen) => {
-        setDialogOpen(nextOpen);
+        if (!nextOpen) closeDialog();
         if (!nextOpen) form.reset();
       }}
     >
@@ -121,10 +111,7 @@ export function CreateServiceDialog({
           <DialogFooter showCloseButton>
             <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button
-                  type="submit"
-                  disabled={!canSubmit || (isSubmitting as boolean)}
-                >
+                <Button type="submit" disabled={!canSubmit || isSubmitting}>
                   {isSubmitting ? "Creating…" : "Create service"}
                 </Button>
               )}

@@ -28,10 +28,10 @@ const PAGE_SEGMENT_TITLES: Record<string, string> = {
 };
 
 export function AppHeader() {
+  const { serviceId } = useParams({ from: "/_app/services/$serviceId" });
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
-  const { serviceId = "" } = useParams({ strict: false });
 
   // oxlint-disable-next-line unicorn/prefer-array-find
   const lastSegment = pathname.split("/").filter(Boolean).at(-1) ?? "";

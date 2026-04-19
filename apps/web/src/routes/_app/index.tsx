@@ -1,10 +1,21 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { DUMMY_SERVICES, resolveDefaultServiceId } from "@/lib/service-cookie";
+import {
+  $resolveDefaultServiceId,
+  servicesQueryOptions,
+} from "@/server/services";
 
 export const Route = createFileRoute("/_app/")({
-  beforeLoad: () => {
-    const serviceId = resolveDefaultServiceId(DUMMY_SERVICES);
+  beforeLoad: async ({ context }) => {
+    const services = await context.queryClient.ensureQueryData(
+      servicesQueryOptions(),
+    );
+
+    if (!services) {
+      throw redirect({ to: "/get-started" });
+    }
+
+    const serviceId = await $resolveDefaultServiceId({ data: services });
 
     if (!serviceId) {
       throw redirect({ to: "/get-started" });

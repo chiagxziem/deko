@@ -1,10 +1,38 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  $resolveDefaultServiceId,
+  $setLastService,
+  servicesQueryOptions,
+} from "@/server/services";
 
 export const Route = createFileRoute("/_app")({
+  beforeLoad: async ({ context }) => {
+    const services = await context.queryClient.ensureQueryData(
+      servicesQueryOptions(),
+    );
+
+    if (!services) {
+      throw redirect({ to: "/get-started" });
+    }
+
+    const serviceId = await $resolveDefaultServiceId({ data: services });
+
+    if (!serviceId) {
+      throw redirect({ to: "/get-started" });
+    }
+
+    await $setLastService({ data: serviceId });
+  },
+  loader: async ({ context }) => {
+    // await Promise.all([
+    //   context.queryClient.prefetchQuery(servicesQueryOptions())
+    // ])
+    await context.queryClient.prefetchQuery(servicesQueryOptions());
+  },
   component: AppLayout,
 });
 

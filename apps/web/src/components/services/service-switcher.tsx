@@ -1,9 +1,12 @@
 import { PlusSignIcon, UnfoldMoreIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
-import { CreateServiceDialog } from "@/components/create-service-dialog";
+import { ServiceSelectSchema } from "@repo/db/validators/service.validator";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,23 +23,32 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  DUMMY_SERVICES,
-  setLastServiceId,
-  type DummyService,
-} from "@/lib/service-cookie";
+  $getAllServices,
+  $setLastService,
+  servicesQueryOptions,
+} from "@/server/services";
+import { useDialogStore } from "@/stores/dialog-store";
 
 export function ServiceSwitcher() {
-  const { isMobile } = useSidebar();
-  const { serviceId = "" } = useParams({ strict: false });
+  const { serviceId } = useParams({ from: "/_app/services/$serviceId" });
   const navigate = useNavigate();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const getAllService = useServerFn($getAllServices);
+  const setLastService = useServerFn($setLastService);
 
-  const activeService: DummyService =
-    DUMMY_SERVICES.find((s) => s.id === serviceId) ?? DUMMY_SERVICES[0];
+  const openDialog = useDialogStore((s) => s.openDialog);
+  const { isMobile } = useSidebar();
 
-  const handleSwitch = (service: DummyService) => {
-    setLastServiceId(service.id);
-    void navigate({
+  const services = useQuery({
+    ...servicesQueryOptions(),
+    queryFn: getAllService,
+  });
+
+  const activeService =
+    services.data?.find((s) => s.id === serviceId) ?? services.data?.[0];
+
+  const handleSwitch = async (service: z.infer<typeof ServiceSelectSchema>) => {
+    await setLastService({ data: service.id });
+    await navigate({
       to: "/services/$serviceId/overview",
       params: { serviceId: service.id },
     });
@@ -52,12 +64,14 @@ export function ServiceSwitcher() {
             className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
           >
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <span className="font-bold">{activeService.name.charAt(0)}</span>
+              <span className="font-bold">{activeService?.name.charAt(0)}</span>
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{activeService.name}</span>
+              <span className="truncate font-medium">
+                {activeService?.name}
+              </span>
               <span className="truncate text-xs text-muted-foreground">
-                {activeService.slug}
+                {activeService?.slug}
               </span>
             </div>
             <HugeiconsIcon
@@ -76,7 +90,7 @@ export function ServiceSwitcher() {
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 Services
               </DropdownMenuLabel>
-              {DUMMY_SERVICES.map((service) => (
+              {services.data?.map((service) => (
                 <DropdownMenuItem
                   key={service.id}
                   onClick={() => handleSwitch(service)}
@@ -93,7 +107,7 @@ export function ServiceSwitcher() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="p-1.5"
-                onClick={() => setIsCreateDialogOpen(true)}
+                onClick={() => openDialog({ type: "create-service" })}
               >
                 <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                   <HugeiconsIcon icon={PlusSignIcon} size={14} />
@@ -105,10 +119,6 @@ export function ServiceSwitcher() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <CreateServiceDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-        />
       </SidebarMenuItem>
     </SidebarMenu>
   );

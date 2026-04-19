@@ -8,7 +8,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useParams, useRouterState } from "@tanstack/react-router";
 
-import { ServiceSwitcher } from "@/components/layout/service-switcher";
+import { ServiceSwitcher } from "@/components/services/service-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -47,10 +47,10 @@ const navItems = [
 ];
 
 export function AppSidebar() {
+  const { serviceId } = useParams({ from: "/_app/services/$serviceId" });
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
-  const { serviceId = "" } = useParams({ strict: false });
 
   const isActive = (page: string) => pathname.split("/").at(-1) === page;
 

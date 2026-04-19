@@ -9,9 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as GetStartedRouteImport } from './routes/get-started'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as OnboardingGetStartedRouteImport } from './routes/_onboarding/get-started'
 import { Route as AppServicesServiceIdRouteRouteImport } from './routes/_app/services/$serviceId/route'
 import { Route as AppServicesServiceIdSettingsRouteImport } from './routes/_app/services/$serviceId/settings'
 import { Route as AppServicesServiceIdOverviewRouteImport } from './routes/_app/services/$serviceId/overview'
@@ -19,11 +19,6 @@ import { Route as AppServicesServiceIdLogsRouteImport } from './routes/_app/serv
 import { Route as AppServicesServiceIdErrorsRouteImport } from './routes/_app/services/$serviceId/errors'
 import { Route as AppServicesServiceIdEndpointsRouteImport } from './routes/_app/services/$serviceId/endpoints'
 
-const GetStartedRoute = GetStartedRouteImport.update({
-  id: '/get-started',
-  path: '/get-started',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -32,6 +27,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const OnboardingGetStartedRoute = OnboardingGetStartedRouteImport.update({
+  id: '/_onboarding/get-started',
+  path: '/get-started',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppServicesServiceIdRouteRoute =
   AppServicesServiceIdRouteRouteImport.update({
@@ -72,7 +72,7 @@ const AppServicesServiceIdEndpointsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/get-started': typeof GetStartedRoute
+  '/get-started': typeof OnboardingGetStartedRoute
   '/services/$serviceId': typeof AppServicesServiceIdRouteRouteWithChildren
   '/services/$serviceId/endpoints': typeof AppServicesServiceIdEndpointsRoute
   '/services/$serviceId/errors': typeof AppServicesServiceIdErrorsRoute
@@ -81,7 +81,7 @@ export interface FileRoutesByFullPath {
   '/services/$serviceId/settings': typeof AppServicesServiceIdSettingsRoute
 }
 export interface FileRoutesByTo {
-  '/get-started': typeof GetStartedRoute
+  '/get-started': typeof OnboardingGetStartedRoute
   '/': typeof AppIndexRoute
   '/services/$serviceId': typeof AppServicesServiceIdRouteRouteWithChildren
   '/services/$serviceId/endpoints': typeof AppServicesServiceIdEndpointsRoute
@@ -93,7 +93,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
-  '/get-started': typeof GetStartedRoute
+  '/_onboarding/get-started': typeof OnboardingGetStartedRoute
   '/_app/': typeof AppIndexRoute
   '/_app/services/$serviceId': typeof AppServicesServiceIdRouteRouteWithChildren
   '/_app/services/$serviceId/endpoints': typeof AppServicesServiceIdEndpointsRoute
@@ -126,7 +126,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
-    | '/get-started'
+    | '/_onboarding/get-started'
     | '/_app/'
     | '/_app/services/$serviceId'
     | '/_app/services/$serviceId/endpoints'
@@ -138,18 +138,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
-  GetStartedRoute: typeof GetStartedRoute
+  OnboardingGetStartedRoute: typeof OnboardingGetStartedRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/get-started': {
-      id: '/get-started'
-      path: '/get-started'
-      fullPath: '/get-started'
-      preLoaderRoute: typeof GetStartedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -163,6 +156,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/_onboarding/get-started': {
+      id: '/_onboarding/get-started'
+      path: '/get-started'
+      fullPath: '/get-started'
+      preLoaderRoute: typeof OnboardingGetStartedRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/services/$serviceId': {
       id: '/_app/services/$serviceId'
@@ -247,7 +247,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
-  GetStartedRoute: GetStartedRoute,
+  OnboardingGetStartedRoute: OnboardingGetStartedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

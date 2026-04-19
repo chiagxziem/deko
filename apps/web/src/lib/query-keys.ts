@@ -1,4 +1,6 @@
 export const queryKeys = {
+  services: () => ["services"] as const,
+  service: (serviceId: string) => ["service", serviceId] as const,
   // user: () => ["user"] as const,
   // cart: () => ["cart"] as const,
   // product: (id: string) => ["product", id] as const,

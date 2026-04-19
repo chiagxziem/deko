@@ -5,6 +5,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { DialogHost } from "@/components/layout/dialog-host";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import appCss from "@/styles/app.css?url";
@@ -39,7 +41,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="light" lang="en" suppressHydrationWarning>
+    <html className="dark" lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -48,6 +50,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <TooltipProvider>
           <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
             {children}
+            <DialogHost />
+            <Toaster richColors position="top-right" />
           </div>
         </TooltipProvider>
         <Scripts />

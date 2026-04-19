@@ -1,12 +1,11 @@
 import { createFetch } from "@better-fetch/fetch";
+import "@tanstack/react-start/server-only";
 
 import { errorResSchema } from "@/lib/schemas";
 
 import { env } from "./env";
 
-//! This will worked on! Unlike Next.js, TanStack Start actually has server functions that can fetch data!
-// When using the baseURL on the server, the full URL is used to avoid CORS issues. On the client, a relative URL is used
-const baseURL = typeof window === "undefined" ? `${env.API_URL}/api` : "/api";
+const baseURL = `${env.API_URL}/api`;
 
 export const $fetch = createFetch({
   baseURL,
