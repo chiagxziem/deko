@@ -36,7 +36,7 @@ export function ServiceSwitcher() {
   const setLastService = useServerFn($setLastService);
 
   const openDialog = useDialogStore((s) => s.openDialog);
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const services = useQuery({
     ...servicesQueryOptions(),
@@ -107,7 +107,10 @@ export function ServiceSwitcher() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="p-1.5"
-                onClick={() => openDialog({ type: "create-service" })}
+                onClick={() => {
+                  openDialog({ type: "create-service" });
+                  setOpenMobile(false);
+                }}
               >
                 <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                   <HugeiconsIcon icon={PlusSignIcon} size={14} />

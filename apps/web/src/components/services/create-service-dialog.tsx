@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -15,33 +16,48 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { $setLastService } from "@/server/services";
+import { queryKeys } from "@/lib/query-keys";
+import { handleError } from "@/lib/utils";
+import { $createService, $setLastService } from "@/server/services";
 import { useDialogStore } from "@/stores/dialog-store";
 
 export function CreateServiceDialog() {
   const navigate = useNavigate();
+  const createService = useServerFn($createService);
   const setLastService = useServerFn($setLastService);
+  const queryClient = useQueryClient();
 
   const activeDialog = useDialogStore((s) => s.activeDialog);
   const closeDialog = useDialogStore((s) => s.closeDialog);
 
   const dialogOpen = activeDialog?.type === "create-service";
 
-  const form = useForm({
-    defaultValues: { name: "" },
-    onSubmit: async ({ value }) => {
-      // TODO: wire to POST /api/services
-      await new Promise((r) => setTimeout(r, 400));
+  const createServiceMutation = useMutation({
+    mutationFn: createService,
+    onSuccess: async (newService) => {
+      await setLastService({ data: newService.id });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.services() });
+      queryClient.setQueryData(queryKeys.service(newService.id), newService);
 
-      // Simulate new service creation — replace with real response ID
-      const newId = crypto.randomUUID();
-      await setLastService({ data: newId });
       closeDialog();
-      toast.success(`Service "${value.name}" created`);
+      form.reset();
+      toast.success(`Service "${newService.name}" created`);
 
       void navigate({
         to: "/services/$serviceId/overview",
-        params: { serviceId: newId },
+        params: { serviceId: newService.id },
+      });
+    },
+    onError: (err) => {
+      handleError(err, "Failed to create service");
+    },
+  });
+
+  const form = useForm({
+    defaultValues: { name: "" },
+    onSubmit: async ({ value }) => {
+      await createServiceMutation.mutateAsync({
+        data: value.name,
       });
     },
   });
@@ -94,6 +110,7 @@ export function CreateServiceDialog() {
                   id={field.name}
                   name={field.name}
                   type="text"
+                  disabled={createServiceMutation.isPending}
                   placeholder="e.g. Payments API"
                   autoComplete="off"
                   value={field.state.value}
@@ -111,8 +128,17 @@ export function CreateServiceDialog() {
           <DialogFooter showCloseButton>
             <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? "Creating…" : "Create service"}
+                <Button
+                  type="submit"
+                  disabled={
+                    !canSubmit ||
+                    isSubmitting ||
+                    createServiceMutation.isPending
+                  }
+                >
+                  {isSubmitting || createServiceMutation.isPending
+                    ? "Creating…"
+                    : "Create service"}
                 </Button>
               )}
             </form.Subscribe>
