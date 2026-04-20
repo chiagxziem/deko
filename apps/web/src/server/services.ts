@@ -38,7 +38,7 @@ export const $setLastService = createServerFn()
 
 // ————— get all services ———————————————————
 export const $getAllServices = createServerFn().handler(async () => {
-  const { data, error } = await $fetch("/services", {
+  const { data: res, error } = await $fetch("/services", {
     output: successResSchema(z.array(ServiceSelectSchema)),
   });
 
@@ -47,7 +47,7 @@ export const $getAllServices = createServerFn().handler(async () => {
     return null;
   }
 
-  return data.data;
+  return res.data;
 });
 // get all services query options
 export const servicesQueryOptions = () =>
@@ -60,20 +60,20 @@ export const servicesQueryOptions = () =>
 export const $createService = createServerFn({ method: "POST" })
   .inputValidator(z.string().min(1))
   .handler(async ({ data: name }) => {
-    const data = await $fetchAndThrow("/services", {
+    const res = await $fetchAndThrow("/services", {
       method: "POST",
       body: { name },
       output: successResSchema(ServiceSelectSchema),
     });
 
-    return data.data;
+    return res.data;
   });
 
 // ————— get single service ———————————————————
 export const $getSingleService = createServerFn()
   .inputValidator(z.uuid())
   .handler(async ({ data: serviceId }) => {
-    const { data, error } = await $fetch("/services/:serviceId", {
+    const { data: res, error } = await $fetch("/services/:serviceId", {
       params: { serviceId },
       output: successResSchema(
         ServiceSelectSchema.extend({
@@ -87,7 +87,7 @@ export const $getSingleService = createServerFn()
       return null;
     }
 
-    return data.data;
+    return res.data;
   });
 // get single service query options
 export const singleServiceQueryOptions = (serviceId: string) =>
@@ -100,7 +100,7 @@ export const singleServiceQueryOptions = (serviceId: string) =>
 export const $updateService = createServerFn({ method: "POST" })
   .inputValidator(z.object({ name: z.string().min(1), serviceId: z.uuid() }))
   .handler(async ({ data: { name, serviceId } }) => {
-    const data = await $fetchAndThrow("/services/:serviceId", {
+    const res = await $fetchAndThrow("/services/:serviceId", {
       method: "PATCH",
       params: { serviceId },
       body: { name },
@@ -111,14 +111,14 @@ export const $updateService = createServerFn({ method: "POST" })
       ),
     });
 
-    return data.data;
+    return res.data;
   });
 
 // ————— delete service server fn ———————————————————
 export const $deleteService = createServerFn({ method: "POST" })
   .inputValidator(z.uuid())
   .handler(async ({ data: serviceId }) => {
-    const data = await $fetchAndThrow("/services/:serviceId", {
+    const res = await $fetchAndThrow("/services/:serviceId", {
       method: "DELETE",
       params: { serviceId },
       output: successResSchema(
@@ -128,21 +128,21 @@ export const $deleteService = createServerFn({ method: "POST" })
       ),
     });
 
-    return data.data;
+    return res.data;
   });
 
 // ————— create service token server fn ———————————————————
 export const $createServiceToken = createServerFn({ method: "POST" })
   .inputValidator(z.object({ name: z.string().min(1), serviceId: z.uuid() }))
   .handler(async ({ data: { name, serviceId } }) => {
-    const data = await $fetchAndThrow("/services/:serviceId/tokens", {
+    const res = await $fetchAndThrow("/services/:serviceId/tokens", {
       method: "POST",
       params: { serviceId },
       body: { name },
       output: successResSchema(ServiceTokenSelectSchema),
     });
 
-    return data.data;
+    return res.data;
   });
 
 // ————— update service token server fn ———————————————————
@@ -155,14 +155,14 @@ export const $updateServiceToken = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data: { name, serviceId, tokenId } }) => {
-    const data = await $fetchAndThrow("/services/:serviceId/tokens/:tokenId", {
+    const res = await $fetchAndThrow("/services/:serviceId/tokens/:tokenId", {
       method: "PATCH",
       params: { serviceId, tokenId },
       body: { name },
       output: successResSchema(ServiceTokenPublicSchema),
     });
 
-    return data.data;
+    return res.data;
   });
 
 // ————— rotate service token server fn ———————————————————
@@ -174,7 +174,7 @@ export const $rotateServiceToken = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data: { serviceId, tokenId } }) => {
-    const data = await $fetchAndThrow(
+    const res = await $fetchAndThrow(
       "/services/:serviceId/tokens/:tokenId/rotate",
       {
         method: "POST",
@@ -183,7 +183,7 @@ export const $rotateServiceToken = createServerFn({ method: "POST" })
       },
     );
 
-    return data.data;
+    return res.data;
   });
 
 // ————— delete service token server fn ———————————————————
@@ -195,7 +195,7 @@ export const $deleteServiceToken = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data: { serviceId, tokenId } }) => {
-    const data = await $fetchAndThrow("/services/:serviceId/tokens/:tokenId", {
+    const res = await $fetchAndThrow("/services/:serviceId/tokens/:tokenId", {
       method: "DELETE",
       params: { serviceId, tokenId },
       output: successResSchema(
@@ -205,5 +205,5 @@ export const $deleteServiceToken = createServerFn({ method: "POST" })
       ),
     });
 
-    return data.data;
+    return res.data;
   });

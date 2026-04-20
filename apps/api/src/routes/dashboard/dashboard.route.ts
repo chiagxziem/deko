@@ -4,11 +4,13 @@ import { z } from "zod";
 import {
   GranularityEnumSchema,
   LevelEnumSchema,
+  LogsQuerySchema,
   MethodEnumSchema,
   PeriodEnumSchema,
   ServiceLogList,
   ServiceOverviewStats,
   ServiceTimeseriesStats,
+  SlowLogsQuerySchema,
   TopEndpointSortBySchema,
 } from "@repo/db/validators/dashboard.validator";
 
@@ -285,31 +287,7 @@ export const createDashboardRouter = ({
     "/:serviceId/logs",
     getServiceLogsDoc,
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
-    validator(
-      "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        level: LevelEnumSchema.optional(),
-        status: z.coerce.number().optional(),
-        environment: z.string().optional(),
-        method: MethodEnumSchema.optional(),
-        path: z.string().optional(),
-        to: z.iso
-          .datetime()
-          .transform((n) => new Date(n))
-          .optional(),
-        from: z.iso
-          .datetime()
-          .transform((n) => new Date(n))
-          .optional(),
-        search: z.string().optional(),
-        cursor: z.string().optional(),
-        limit: z.coerce.number().min(1).max(100).default(50),
-        // exactCount is opt-in because exact counts can be expensive on large datasets
-        exactCount: z.coerce.boolean().default(false),
-      }),
-      validationHook,
-    ),
+    validator("query", LogsQuerySchema, validationHook),
     async (c) => {
       const { serviceId } = c.req.valid("param");
       const {
@@ -519,31 +497,7 @@ export const createDashboardRouter = ({
     "/:serviceId/logs/slow",
     getSlowLogsDoc,
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
-    validator(
-      "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        // minDuration has a default of 1000 ms
-        minDuration: z.coerce.number().min(1).default(1000),
-        level: LevelEnumSchema.optional(),
-        status: z.coerce.number().optional(),
-        environment: z.string().optional(),
-        method: MethodEnumSchema.optional(),
-        path: z.string().optional(),
-        to: z.iso
-          .datetime()
-          .transform((n) => new Date(n))
-          .optional(),
-        from: z.iso
-          .datetime()
-          .transform((n) => new Date(n))
-          .optional(),
-        cursor: z.string().optional(),
-        limit: z.coerce.number().min(1).max(100).default(50),
-        exactCount: z.coerce.boolean().default(false),
-      }),
-      validationHook,
-    ),
+    validator("query", SlowLogsQuerySchema, validationHook),
     async (c) => {
       const { serviceId } = c.req.valid("param");
       const {
@@ -556,7 +510,7 @@ export const createDashboardRouter = ({
         path,
         to,
         from,
-        cursor: cursorRaw,
+        cursor,
         limit,
         exactCount,
       } = c.req.valid("query");
@@ -573,9 +527,9 @@ export const createDashboardRouter = ({
       let cursorTimestamp: number | undefined;
       let cursorId: string | undefined;
 
-      if (cursorRaw) {
+      if (cursor) {
         try {
-          const normalizedCursor = cursorRaw.replace(/ /g, "+");
+          const normalizedCursor = cursor.replace(/ /g, "+");
           const decoded = Buffer.from(normalizedCursor, "base64").toString(
             "utf-8",
           );
@@ -637,9 +591,6 @@ export const createDashboardRouter = ({
           path,
           to,
           from,
-          search: undefined,
-          // Include the active slow-log threshold in the key so count cache
-          // invalidates immediately when minDuration changes.
           minDuration,
         });
 
@@ -673,7 +624,7 @@ export const createDashboardRouter = ({
               nextCursor,
               totalEstimate,
             },
-            // Echo the threshold so the client knows what "slow" meant for this request
+            // echo the threshold so the client knows what "slow" meant for this request
             thresholdMs: minDuration,
           },
           "Slow logs retrieved successfully",

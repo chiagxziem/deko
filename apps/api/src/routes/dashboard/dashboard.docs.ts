@@ -3,7 +3,7 @@ import { describeRoute } from "hono-openapi";
 import {
   ErrorGroupsResponseSchema,
   LogLevelBreakdownSchema,
-  RequestLogsResponseSchema,
+  RequestTraceLogsResponseSchema,
   ServiceLogListSchema,
   ServiceLogSchema,
   ServiceOverviewStatsSchema,
@@ -359,7 +359,7 @@ export const getLogsByRequestIdDoc = describeRoute({
   responses: {
     [HttpStatusCodes.OK]: createSuccessResponse("Request logs retrieved", {
       details: "Request logs retrieved successfully",
-      dataSchema: RequestLogsResponseSchema,
+      dataSchema: RequestTraceLogsResponseSchema,
     }),
     [HttpStatusCodes.BAD_REQUEST]: createErrorResponse("Invalid request data", {
       invalidUUID: {

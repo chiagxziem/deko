@@ -45,10 +45,10 @@ The goal is to keep the app easy to understand without flattening everything int
 These are the main application destinations.
 
 - [ ] `/` -> redirect to `/overview`
-- [ ] `/overview` -> overview dashboard
-- [ ] `/logs` -> logs workspace
-- [ ] `/errors` -> recurring errors and grouped failures
-- [ ] `/endpoints` -> endpoint leaderboard and performance analysis
+- [x] `/overview` -> overview dashboard
+- [x] `/logs` -> logs workspace
+- [x] `/errors` -> recurring errors and grouped failures
+- [x] `/endpoints` -> endpoint leaderboard and performance analysis
 - [x] `/settings` -> service configuration and token management
 
 ## Nested Route Plan
@@ -57,7 +57,7 @@ These are the nested or stateful route patterns that should exist under the top-
 
 ### Overview
 
-- [ ] `/overview`
+- [x] `/overview`
 
 ### Logs
 
@@ -76,12 +76,12 @@ Notes:
 
 ### Errors
 
-- [ ] `/errors`
+- [x] `/errors`
 - [ ] optional future filter params for environment and period
 
 ### Endpoints
 
-- [ ] `/endpoints`
+- [x] `/endpoints`
 - [ ] optional future sort/filter params
 
 ### Settings
@@ -110,12 +110,12 @@ Notes:
 
 Use for Overview, Logs, Errors, Endpoints, and Settings.
 
-- [ ] Page header
+- [x] Page header
 - [ ] Secondary actions area
 - [ ] Filter row when needed
 - [ ] Empty state slot
-- [ ] Loading state slot
-- [ ] Error state slot
+- [x] Loading state slot
+- [x] Error state slot
 
 ## Page Plan
 
@@ -152,7 +152,7 @@ Provide the main searchable inspection interface for raw log events.
 
 Contains:
 
-- [ ] Page header
+- [x] Page header
 - [ ] View switcher: All Logs / Slow Requests
 - [ ] Search input
 - [ ] Filters: period, environment, method, level, status, path
@@ -319,8 +319,8 @@ Use dummy data for first build:
 - [ ] Logs filter bar
 - [ ] Logs view switcher
 - [ ] Empty state block
-- [ ] Loading skeletons
-- [ ] Error state block
+- [x] Loading skeletons
+- [x] Error state block
 - [x] Token reveal card (AlertDialog with copy input)
 
 ## Recommended Build Order
@@ -332,7 +332,7 @@ Use dummy data for first build:
 
 ### Phase 2
 
-- [ ] Logs workspace
+- [x] Logs workspace
 - [ ] All Logs view
 - [ ] Slow Requests view
 - [ ] Route-driven log detail drawer

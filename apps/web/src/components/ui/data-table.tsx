@@ -5,6 +5,7 @@ import {
   FilterIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { rankItem } from "@tanstack/match-sorter-utils";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -21,6 +22,7 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useMemo,
   useState,
 } from "react";
 
@@ -122,6 +124,20 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   filters?: FilterConfig[];
+  /** Controlled search text shown in the toolbar search input. */
+  searchValue?: string;
+  /** Called whenever search text changes. Useful for URL/query-param syncing. */
+  onSearchChange?: (value: string) => void;
+  /** Controlled active filter values keyed by columnId. */
+  activeFilterValues?: Record<string, string[]>;
+  /** Called whenever a dropdown filter changes. Useful for URL/query-param syncing. */
+  onFilterChange?: (columnId: string, values: string[]) => void;
+  /** Called to clear all active filters at once. */
+  onClearAllFilters?: () => void;
+  /** Enable fuzzy matching for the global search input. */
+  enableFuzzyGlobalFilter?: boolean;
+  /** Skip client-side filtering when data is already filtered server-side. */
+  manualFiltering?: boolean;
   actionButtons?: ActionButton[];
   defaultSorting?: SortingState;
   defaultPagination?: PaginationState;
@@ -144,6 +160,13 @@ export const DataTable = <TData, TValue>({
   columns,
   data,
   filters = [],
+  searchValue,
+  onSearchChange,
+  activeFilterValues,
+  onFilterChange,
+  onClearAllFilters,
+  enableFuzzyGlobalFilter = false,
+  manualFiltering = false,
   actionButtons = [],
   defaultSorting = [],
   defaultPagination = { pageIndex: 0, pageSize: 10 },
@@ -173,6 +196,18 @@ export const DataTable = <TData, TValue>({
     {},
   );
 
+  const effectiveGlobalFilter = searchValue ?? globalFilter;
+  const effectiveActiveFilters = activeFilterValues ?? activeFilters;
+  const effectiveColumnFilters = useMemo<ColumnFiltersState>(() => {
+    if (!activeFilterValues) {
+      return columnFilters;
+    }
+
+    return Object.entries(activeFilterValues)
+      .filter(([, values]) => values.length > 0)
+      .map(([id, values]) => ({ id, value: values }));
+  }, [activeFilterValues, columnFilters]);
+
   const table = useReactTable({
     columns,
     data,
@@ -181,7 +216,8 @@ export const DataTable = <TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
     enableMultiSort: false,
-    getFilteredRowModel: getFilteredRowModel(),
+    getFilteredRowModel: manualFiltering ? undefined : getFilteredRowModel(),
+    manualFiltering,
     onColumnFiltersChange: setColumnFilters,
     getPaginationRowModel: isServerSide ? undefined : getPaginationRowModel(),
     manualPagination: isServerSide,
@@ -189,45 +225,70 @@ export const DataTable = <TData, TValue>({
     onPaginationChange: isServerSide
       ? setControlledPagination
       : setInternalPagination,
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: (value) => {
+      const nextValue = String(value ?? "");
+      setGlobalFilter(nextValue);
+      onSearchChange?.(nextValue);
+    },
     globalFilterFn: (row, _columnId, filterValue) => {
       const searchFilter = filters.find((f) => f.type === "search");
 
       if (!searchFilter) return true;
 
-      const searchValue = (filterValue as string).toLowerCase();
+      const searchValue = String(filterValue ?? "").trim();
+
+      if (!searchValue) return true;
 
       return searchFilter.searchColumns.some((column) => {
-        const value = row.getValue(column);
-        return (value as string)?.toLowerCase().includes(searchValue);
+        const value =
+          row.getValue(column) ??
+          (row.original as Record<string, unknown> | undefined)?.[column];
+        const text = String(value ?? "");
+
+        if (enableFuzzyGlobalFilter) {
+          return rankItem(text, searchValue).passed;
+        }
+
+        return text.toLowerCase().includes(searchValue.toLowerCase());
       });
     },
     state: {
       sorting,
-      columnFilters,
+      columnFilters: effectiveColumnFilters,
       pagination,
-      globalFilter,
+      globalFilter: effectiveGlobalFilter,
     },
   });
 
   const handleFilterToggle = (
     columnId: string,
     selectedValue: string,
+    allowMultiple: boolean,
     transformValue?: (value: string) => unknown,
   ) => {
-    const currentValues = activeFilters[columnId] ?? [];
+    const currentValues = effectiveActiveFilters[columnId] ?? [];
     const hasValue = currentValues.includes(selectedValue);
     const nextValues = hasValue
       ? currentValues.filter((value) => value !== selectedValue)
-      : [...currentValues, selectedValue];
+      : allowMultiple
+        ? [...currentValues, selectedValue]
+        : [selectedValue];
 
-    setActiveFilters((prev) => ({
-      ...prev,
-      [columnId]: nextValues,
-    }));
+    onFilterChange?.(columnId, nextValues);
+
+    if (!activeFilterValues) {
+      setActiveFilters((prev) => ({
+        ...prev,
+        [columnId]: nextValues,
+      }));
+    }
+
+    if (activeFilterValues) {
+      return;
+    }
 
     setColumnFilters((prev) => {
-      const otherFilters = prev.filter((f) => f.id !== columnId);
+      const otherFilters = prev.filter((filter) => filter.id !== columnId);
 
       if (nextValues.length === 0) {
         return otherFilters;
@@ -279,79 +340,105 @@ export const DataTable = <TData, TValue>({
         singleDropdownFilters.length > 0 ||
         multiDropdownFilters.length > 0 ||
         actionButtons.length > 0) && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Search Input */}
           {searchFilter && (
             <Input
-              className="h-8 max-w-72 rounded-md"
-              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="max-w-72 min-w-64 rounded-md"
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setGlobalFilter(nextValue);
+                onSearchChange?.(nextValue);
+              }}
               placeholder={searchFilter.placeholder}
-              value={globalFilter}
+              value={effectiveGlobalFilter}
             />
           )}
 
           {/* Single Dropdown Filters */}
-          {singleDropdownFilters.map((filter) => (
-            <DropdownMenu key={`single-filter-${filter.columnId}`}>
-              <DropdownMenuTrigger
-                render={
-                  <Button size="sm" variant="outline">
-                    <HugeiconsIcon icon={FilterIcon} className="size-4" />
-                    <span className="hidden md:inline-block">
-                      {filter.label}
-                    </span>
-                    {(activeFilters[filter.columnId]?.length ?? 0) > 0 && (
-                      <span className="border-primary-600/50 bg-primary-600/20 text-primary-600 rounded border px-1 text-xs transition-all duration-300 md:ml-2">
-                        {activeFilters[filter.columnId]?.length}
-                      </span>
-                    )}
-                  </Button>
-                }
-              />
+          {singleDropdownFilters.map((filter) => {
+            const selectedValue = effectiveActiveFilters[filter.columnId]?.[0];
 
-              <DropdownMenuContent
-                align="start"
-                className="min-w-36"
-                side="bottom"
-              >
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>
-                    Filter by {filter.label}
-                  </DropdownMenuLabel>
-                  {filter.options.map((option) => (
-                    <DropdownMenuCheckboxItem
-                      checked={(activeFilters[filter.columnId] ?? []).includes(
-                        option.value,
-                      )}
-                      className="group"
-                      closeOnClick={false}
-                      disabled={option.count === 0}
-                      key={`${filter.columnId}-${option.value}`}
-                      onCheckedChange={() =>
-                        handleFilterToggle(
-                          filter.columnId,
-                          option.value,
-                          filter.transformValue,
-                        )
-                      }
-                    >
-                      <span>{option.label}</span>
-                      {option.count !== undefined && (
-                        <span className="ml-auto text-xs text-muted-foreground group-focus:text-primary">
-                          {option.count}
+            return (
+              <DropdownMenu key={`single-filter-${filter.columnId}`}>
+                <DropdownMenuTrigger
+                  render={
+                    <Button size="sm" variant="outline" className="h-7">
+                      <HugeiconsIcon icon={FilterIcon} className="size-4" />
+                      <span>{filter.label}</span>
+                      {selectedValue && (
+                        <span className="border-primary-600/50 bg-primary-600/20 text-primary-600 rounded border px-1 text-xs transition-all duration-300">
+                          1
                         </span>
                       )}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ))}
+                    </Button>
+                  }
+                />
+
+                <DropdownMenuContent
+                  align="start"
+                  className="min-w-48"
+                  side="bottom"
+                >
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>{filter.label}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {filter.options.map((option) => (
+                      <DropdownMenuCheckboxItem
+                        checked={selectedValue === option.value}
+                        className="group"
+                        closeOnClick
+                        disabled={option.count === 0}
+                        key={`${filter.columnId}-${option.value}`}
+                        onCheckedChange={(checked) => {
+                          const nextValues = checked ? [option.value] : [];
+                          onFilterChange?.(filter.columnId, nextValues);
+                          if (!activeFilterValues) {
+                            setActiveFilters((prev) => ({
+                              ...prev,
+                              [filter.columnId]: nextValues,
+                            }));
+                            setColumnFilters((prev) => {
+                              const others = prev.filter(
+                                (f) => f.id !== filter.columnId,
+                              );
+                              return nextValues.length > 0
+                                ? [
+                                    ...others,
+                                    {
+                                      id: filter.columnId,
+                                      value: filter.transformValue
+                                        ? nextValues.map((v) =>
+                                            filter.transformValue!(v),
+                                          )
+                                        : nextValues,
+                                    },
+                                  ]
+                                : others;
+                            });
+                          }
+                        }}
+                      >
+                        <span>{option.label}</span>
+                        {option.count !== undefined && (
+                          <span className="ml-auto text-xs text-muted-foreground group-focus:text-primary">
+                            {option.count}
+                          </span>
+                        )}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          })}
 
           {/* Multi Dropdown Filters */}
           {multiDropdownFilters.map((filter, index) => {
             const activeCount = filter.groups.reduce((count, group) => {
-              return count + (activeFilters[group.columnId]?.length ?? 0);
+              return (
+                count + (effectiveActiveFilters[group.columnId]?.length ?? 0)
+              );
             }, 0);
 
             return (
@@ -359,13 +446,11 @@ export const DataTable = <TData, TValue>({
               <DropdownMenu key={`multi-filter-${index}`}>
                 <DropdownMenuTrigger
                   render={
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" className="h-7">
                       <HugeiconsIcon icon={FilterIcon} className="size-4" />
-                      <span className="hidden md:inline-block">
-                        {filter.label}
-                      </span>
+                      <span>{filter.label}</span>
                       {activeCount > 0 && (
-                        <span className="border-primary-600/50 bg-primary-600/20 text-primary-600 rounded border px-1 text-xs transition-all duration-300 md:ml-2">
+                        <span className="border-primary-600/50 bg-primary-600/20 text-primary-600 rounded border px-1 text-xs transition-all duration-300">
                           {activeCount}
                         </span>
                       )}
@@ -387,8 +472,8 @@ export const DataTable = <TData, TValue>({
                         <DropdownMenuSub key={`group-${group.columnId}`}>
                           <DropdownMenuSubTrigger className="flex items-center justify-between">
                             <span>{group.label}</span>
-                            {(activeFilters[group.columnId]?.length ?? 0) >
-                              0 && (
+                            {(effectiveActiveFilters[group.columnId]?.length ??
+                              0) > 0 && (
                               <span className="bg-primary-600/20 text-primary-600 h-1.5 w-1.5 rounded-full" />
                             )}
                           </DropdownMenuSubTrigger>
@@ -396,7 +481,7 @@ export const DataTable = <TData, TValue>({
                             {group.options.map((option) => (
                               <DropdownMenuCheckboxItem
                                 checked={(
-                                  activeFilters[group.columnId] ?? []
+                                  effectiveActiveFilters[group.columnId] ?? []
                                 ).includes(option.value)}
                                 className="group"
                                 closeOnClick={false}
@@ -406,6 +491,7 @@ export const DataTable = <TData, TValue>({
                                   handleFilterToggle(
                                     group.columnId,
                                     option.value,
+                                    true,
                                     group.transformValue,
                                   )
                                 }
@@ -431,7 +517,7 @@ export const DataTable = <TData, TValue>({
                         {group.options.map((option) => (
                           <DropdownMenuCheckboxItem
                             checked={(
-                              activeFilters[group.columnId] ?? []
+                              effectiveActiveFilters[group.columnId] ?? []
                             ).includes(option.value)}
                             className="group"
                             closeOnClick={false}
@@ -441,6 +527,7 @@ export const DataTable = <TData, TValue>({
                               handleFilterToggle(
                                 group.columnId,
                                 option.value,
+                                true,
                                 group.transformValue,
                               )
                             }
@@ -460,6 +547,36 @@ export const DataTable = <TData, TValue>({
               </DropdownMenu>
             );
           })}
+
+          {/* Clear All Filters */}
+          {(onClearAllFilters ?? onFilterChange) &&
+            Object.values(effectiveActiveFilters).some((v) => v.length > 0) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  if (onClearAllFilters) {
+                    onClearAllFilters();
+                  } else {
+                    singleDropdownFilters.forEach((f) => {
+                      onFilterChange?.(f.columnId, []);
+                      if (!activeFilterValues) {
+                        setActiveFilters((prev) => ({
+                          ...prev,
+                          [f.columnId]: [],
+                        }));
+                      }
+                    });
+                    if (!activeFilterValues) {
+                      setColumnFilters([]);
+                    }
+                  }
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
 
           {/* Action Buttons */}
           {actionButtons.map((button, index) => (
@@ -493,7 +610,17 @@ export const DataTable = <TData, TValue>({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead colSpan={header.colSpan} key={header.id}>
+                <TableHead
+                  colSpan={header.colSpan}
+                  key={header.id}
+                  className={
+                    (
+                      header.column.columnDef.meta as
+                        | Record<string, string>
+                        | undefined
+                    )?.headerClassName
+                  }
+                >
                   {header.isPlaceholder ? null : header.column.getCanSort() ? (
                     <div
                       role="columnheader"
@@ -555,7 +682,16 @@ export const DataTable = <TData, TValue>({
                 }
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className={
+                      (
+                        cell.column.columnDef.meta as
+                          | Record<string, string>
+                          | undefined
+                      )?.cellClassName
+                    }
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

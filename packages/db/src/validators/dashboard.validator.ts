@@ -7,6 +7,13 @@ export const LevelEnumSchema = createSelectSchema(levelEnum);
 export const MethodEnumSchema = createSelectSchema(methodEnum);
 export const PeriodEnumSchema = z.enum(["1h", "24h", "7d", "30d"]);
 export const GranularityEnumSchema = z.enum(["minute", "hour", "day"]);
+export const TopEndpointSortBySchema = z.enum([
+  "requests",
+  "errors",
+  "error_rate",
+  "p95_duration",
+  "p99_duration",
+]);
 
 export const ServiceOverviewStatsSchema = z.object({
   totalRequests: z.number(),
@@ -101,26 +108,11 @@ export const LogLevelBreakdownSchema = z.object({
   total: z.number(),
 });
 
-// ---------------------------------------------------------------------------
-// Top Endpoints – ranks unique (method, path) pairs by various metrics.
-// Grouping by method+path (not path alone) because GET /users and POST /users
-// have completely different performance and error profiles.
-// ---------------------------------------------------------------------------
-
-export const TopEndpointSortBySchema = z.enum([
-  "requests", // most trafficked
-  "errors", // highest absolute error count
-  "error_rate", // highest error percentage
-  "p95_duration", // slowest at the 95th percentile
-  "p99_duration", // slowest at the 99th percentile
-]);
-
 export const TopEndpointSchema = z.object({
   method: MethodEnumSchema,
   path: z.string(),
   requests: z.number(),
   errors: z.number(),
-  // errorRate is derived server-side so the client doesn't have to calculate it
   errorRate: z.number(),
   avgDuration: z.number(),
   p95Duration: z.number(),
@@ -129,21 +121,13 @@ export const TopEndpointSchema = z.object({
 
 export const TopEndpointsResponseSchema = z.object({
   endpoints: z.array(TopEndpointSchema),
-  // Echo the effective sort order so the client can label the leaderboard correctly
   sortBy: TopEndpointSortBySchema,
 });
-
-// ---------------------------------------------------------------------------
-// Error Groups – fingerprints recurring errors by (method, path, status, message)
-// so the dashboard can surface "X occurrences of the same error" rather than
-// showing individual log lines.
-// ---------------------------------------------------------------------------
 
 export const ErrorGroupSchema = z.object({
   method: MethodEnumSchema,
   path: z.string(),
   status: z.number(),
-  // message is nullable because not every log event carries a message
   message: z.string().nullable(),
   count: z.number(),
   firstSeen: z.iso.datetime().transform((n) => new Date(n)),
@@ -152,17 +136,32 @@ export const ErrorGroupSchema = z.object({
 
 export const ErrorGroupsResponseSchema = z.object({
   groups: z.array(ErrorGroupSchema),
-  // total = distinct group count BEFORE the limit is applied, useful for pagination context
   total: z.number(),
 });
 
-// ---------------------------------------------------------------------------
-// Request Trace – all log events that share the same requestId, ordered
-// chronologically.  Lets the dashboard reconstruct what happened during a
-// single request without manual filtering.
-// ---------------------------------------------------------------------------
+export const LogsQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  level: LevelEnumSchema.optional(),
+  status: z.coerce.number().optional(),
+  environment: z.string().optional(),
+  method: MethodEnumSchema.optional(),
+  path: z.string().optional(),
+  to: z.iso
+    .datetime()
+    .transform((n) => new Date(n))
+    .optional(),
+  from: z.iso
+    .datetime()
+    .transform((n) => new Date(n))
+    .optional(),
+  search: z.string().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  // exactCount is opt-in because exact counts can be expensive on large datasets
+  exactCount: z.coerce.boolean().default(false),
+});
 
-export const RequestLogsResponseSchema = z.object({
+export const RequestTraceLogsResponseSchema = z.object({
   requestId: z.string(),
   logs: z.array(
     z.object({
@@ -180,8 +179,11 @@ export const RequestLogsResponseSchema = z.object({
       sessionId: z.string().nullable(),
     }),
   ),
-  // count is the total number of log events for this request
   count: z.number(),
+});
+
+export const SlowLogsQuerySchema = LogsQuerySchema.extend({
+  minDuration: z.coerce.number().min(1).default(1000),
 });
 
 // ---------------------------------------------------------------------------
@@ -233,5 +235,7 @@ export type TopEndpoint = z.infer<typeof TopEndpointSchema>;
 export type TopEndpointsResponse = z.infer<typeof TopEndpointsResponseSchema>;
 export type ErrorGroup = z.infer<typeof ErrorGroupSchema>;
 export type ErrorGroupsResponse = z.infer<typeof ErrorGroupsResponseSchema>;
-export type RequestLogsResponse = z.infer<typeof RequestLogsResponseSchema>;
+export type RequestLogsResponse = z.infer<
+  typeof RequestTraceLogsResponseSchema
+>;
 export type SlowLogsResponse = z.infer<typeof SlowLogsResponseSchema>;

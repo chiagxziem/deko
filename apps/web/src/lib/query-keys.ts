@@ -1,6 +1,10 @@
 export const queryKeys = {
   services: () => ["services"] as const,
   service: (serviceId: string) => ["service", serviceId] as const,
+  logs: (serviceId: string, filters: Record<string, unknown>) =>
+    ["logs", serviceId, filters] as const,
+  singleLog: (serviceId: string, logId: string) =>
+    ["log", serviceId, logId] as const,
   // user: () => ["user"] as const,
   // cart: () => ["cart"] as const,
   // product: (id: string) => ["product", id] as const,

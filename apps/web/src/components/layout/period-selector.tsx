@@ -1,6 +1,5 @@
 import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useState } from "react";
 
 import {
   Select,
@@ -9,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePeriodStore } from "@/stores/period-store";
 
 const periods = [
   { value: "1h", label: "Last hour" },
@@ -18,11 +18,12 @@ const periods = [
 ] as const;
 
 export function PeriodSelector() {
-  const [period, setPeriod] = useState("24h");
+  const period = usePeriodStore((s) => s.period);
+  const setPeriod = usePeriodStore((s) => s.setPeriod);
 
   const handleValueChange = (value: string | null) => {
     if (value) {
-      setPeriod(value);
+      setPeriod(value as typeof period);
     }
   };
 
