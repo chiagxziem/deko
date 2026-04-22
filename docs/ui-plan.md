@@ -44,7 +44,7 @@ The goal is to keep the app easy to understand without flattening everything int
 
 These are the main application destinations.
 
-- [ ] `/` -> redirect to `/overview`
+- [x] `/` -> redirect to `/overview`
 - [x] `/overview` -> overview dashboard
 - [x] `/logs` -> logs workspace
 - [x] `/errors` -> recurring errors and grouped failures
@@ -61,11 +61,9 @@ These are the nested or stateful route patterns that should exist under the top-
 
 ### Logs
 
-- [ ] `/logs?view=all`
-- [ ] `/logs?view=slow`
-- [ ] `/logs/:logId`
-- [ ] `/logs/:logId?view=all`
-- [ ] `/logs/:logId?view=slow`
+- [x] `/logs?view=all`
+- [x] `/logs?view=slow`
+- [x] `/logs?logId={logId}&timestamp={timestamp}`
 
 Notes:
 
@@ -153,22 +151,22 @@ Provide the main searchable inspection interface for raw log events.
 Contains:
 
 - [x] Page header
-- [ ] View switcher: All Logs / Slow Requests
-- [ ] Search input
-- [ ] Filters: period, environment, method, level, status, path
-- [ ] Results table
+- [x] View switcher: All Logs / Slow Requests
+- [x] Search input
+- [x] Filters: period, environment, method, level, status, path
+- [x] Results table
 - [ ] Density and column hierarchy optimized for observability workflows
-- [ ] Cursor-based pagination UI
-- [ ] Selected log overlay drawer
+- [x] Cursor-based pagination UI
+- [x] Selected log overlay drawer
 
 Behavior:
 
-- [ ] Clicking a row navigates to the selected log URL
-- [ ] URL change opens the drawer
-- [ ] Closing the drawer returns to the previous logs URL
-- [ ] Browser back closes or reopens drawer correctly
-- [ ] Drawer uses right-side overlay on desktop
-- [ ] Drawer uses bottom sheet overlay on mobile
+- [x] Clicking a row navigates to the selected log URL
+- [x] URL change opens the drawer
+- [x] Closing the drawer returns to the previous logs URL
+- [x] Browser back closes or reopens drawer correctly
+- [x] Drawer uses right-side overlay on desktop
+- [x] Drawer uses bottom sheet overlay on mobile
 
 ### Log Detail Drawer
 
@@ -177,22 +175,22 @@ Inspect one log without losing table context.
 
 Contains:
 
-- [ ] Timestamp
-- [ ] Method, path, status, duration
-- [ ] Environment and level
-- [ ] Request ID
-- [ ] Session ID if present
-- [ ] Message
-- [ ] Structured metadata view
-- [ ] Copy actions where useful
+- [x] Timestamp
+- [x] Method, path, status, duration
+- [x] Environment and level
+- [x] Request ID
+- [x] Session ID if present
+- [x] Message
+- [x] Structured metadata view
+- [x] Copy actions where useful
 - [ ] Open request trace action placeholder for future
 
 Design notes:
 
-- [ ] Desktop overlay from the right
-- [ ] Mobile overlay from the bottom
-- [ ] No content push
-- [ ] Visually consistent with dense technical workflows
+- [x] Desktop overlay from the right
+- [x] Mobile overlay from the bottom
+- [x] No content push
+- [x] Visually consistent with dense technical workflows
 
 ### Errors Page
 
@@ -277,18 +275,13 @@ Use dummy data for first build:
 
 ### Must Have First
 
-- [ ] Log detail drawer
+- [x] Log detail drawer
 - [x] Create token modal (AlertDialog after token reveal)
 - [x] Rotate token modal (AlertDialog after token reveal)
 - [x] Rename token modal
 - [x] Delete token confirmation (AlertDialog)
 - [x] Edit service modal or inline form
 - [x] Delete service confirmation (AlertDialog with name confirmation)
-
-### Can Wait
-
-- [ ] Command palette
-- [ ] Mobile filter sheet
 
 ## Shared Components To Build
 
@@ -307,7 +300,7 @@ Use dummy data for first build:
 - [ ] Section card
 - [ ] Status badge
 - [ ] Level badge
-- [ ] Logs data table
+- [x] Logs data table
 - [ ] Endpoint leaderboard table
 - [ ] Error groups table
 - [ ] Key-value metadata block
@@ -316,8 +309,8 @@ Use dummy data for first build:
 
 ### Workflow Components
 
-- [ ] Logs filter bar
-- [ ] Logs view switcher
+- [x] Logs filter bar
+- [x] Logs view switcher
 - [ ] Empty state block
 - [x] Loading skeletons
 - [x] Error state block
@@ -333,9 +326,9 @@ Use dummy data for first build:
 ### Phase 2
 
 - [x] Logs workspace
-- [ ] All Logs view
-- [ ] Slow Requests view
-- [ ] Route-driven log detail drawer
+- [x] All Logs view
+- [x] Slow Requests view
+- [x] Route-driven log detail drawer
 
 ### Phase 3
 
@@ -354,14 +347,14 @@ Use dummy data for first build:
 
 Create a single mock data source for early UI work.
 
-- [ ] Services list
+- [x] Services list
 - [ ] Overview KPI metrics
 - [ ] Overview timeseries
 - [ ] Status breakdown
 - [ ] Log level breakdown
-- [ ] Logs table rows
-- [ ] Slow log rows
-- [ ] Selected log detail record
+- [x] Logs table rows
+- [x] Slow log rows
+- [x] Selected log detail record
 - [ ] Error groups
 - [ ] Endpoint leaderboard rows
 - [x] Service settings data
@@ -369,9 +362,9 @@ Create a single mock data source for early UI work.
 
 ## Technical Notes For Future Implementation
 
-- [ ] Prefer route-driven overlay state for log detail instead of local component-only state
-- [ ] Keep the logs page mounted while nested log routes render the drawer
-- [ ] Use responsive drawer behavior: right-side sheet on desktop, bottom drawer on mobile
+- [x] Prefer route-driven overlay state for log detail instead of local component-only state
+- [x] Keep the logs page mounted while nested log routes render the drawer
+- [x] Use responsive drawer behavior: right-side sheet on desktop, bottom drawer on mobile
 - [ ] Keep dummy data shapes close to backend response shapes to reduce rewrite cost later
 - [x] Use Shadcn primitives, but compose app-specific components instead of filling route files with raw UI primitives
 - [x] Build reusable data cards and filter components before over-specializing individual pages
@@ -383,7 +376,6 @@ These are not blockers for starting UI work, but should stay visible.
 - [ ] Should request trace remain an action inside the drawer until trace UI exists?
 - [x] Should service switching be global in the top bar from day one or stubbed for now? (stubbed via service switcher in sidebar)
 - [x] Should period selection be global across pages or local per page initially? (global in header)
-- [ ] Should the logs view switcher be tabs, segmented control, or pills?
 
 ## First Slice Recommendation
 
@@ -391,5 +383,5 @@ If starting implementation immediately, begin here:
 
 - [x] Build app shell
 - [ ] Build overview page with polished dummy data
-- [ ] Build logs workspace skeleton with view switcher
-- [ ] Build route-driven log detail drawer
+- [x] Build logs workspace skeleton with view switcher
+- [x] Build route-driven log detail drawer
