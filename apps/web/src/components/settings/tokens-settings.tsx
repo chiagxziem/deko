@@ -15,7 +15,7 @@ import { useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format, isValid, parseISO } from "date-fns";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -64,6 +64,8 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { useCopyToClipboard } from "@/hooks/use-copy";
 import { queryKeys } from "@/lib/query-keys";
 import { handleError } from "@/lib/utils";
 import {
@@ -136,6 +138,14 @@ const columns: ColumnDef<Token>[] = [
   },
 ];
 
+const TOKEN_LOADING_COLUMN_KEYS = [
+  "name",
+  "preview",
+  "createdAt",
+  "lastUsedAt",
+  "actions",
+] as const;
+
 // ── Tokens Section ───────────────────────────────────────────────────────────
 
 export function TokensSettings() {
@@ -153,11 +163,7 @@ export function TokensSettings() {
     queryFn: () => getSingleService({ data: serviceId }),
   });
 
-  if (isPending) {
-    return <TokensSettingsSkeleton />;
-  }
-
-  if (isError || !service) {
+  if (isError || (!isPending && !service)) {
     return <TokensSettingsError refetch={refetch} />;
   }
 
@@ -182,33 +188,37 @@ export function TokensSettings() {
 
       <DataTable
         columns={columns}
-        data={service.tokens}
+        data={service?.tokens ?? ([] as const)}
         emptyMessage="No tokens yet."
+        tableBodyAppend={
+          isPending ? (
+            <TokenLoadingRows columnKeys={TOKEN_LOADING_COLUMN_KEYS} />
+          ) : undefined
+        }
       />
     </div>
   );
 }
 
-function TokensSettingsSkeleton() {
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold">Tokens</h2>
-          <p className="text-xs text-muted-foreground">
-            Manage API tokens for this service.
-          </p>
-        </div>
-        <Skeleton className="h-6 w-28" />
-      </div>
+function TokenLoadingRows({ columnKeys }: { columnKeys: readonly string[] }) {
+  const rowKeys = ["first", "second", "third"] as const;
 
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
-    </div>
+  return (
+    <>
+      {rowKeys.map((rowKey) => (
+        <TableRow
+          key={`token-loading-row-${rowKey}`}
+          aria-hidden
+          className="pointer-events-none animate-in duration-200 fade-in-0"
+        >
+          {columnKeys.map((columnKey) => (
+            <TableCell key={`token-loading-cell-${rowKey}-${columnKey}`}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
   );
 }
 
@@ -842,58 +852,16 @@ export function TokenDialogsHost() {
 }
 
 function CopyTokenButton({ token }: { token: string }) {
-  const timeoutRef = useRef<number | null>(null);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const tooltipText =
-    copyState === "copied"
-      ? "Copied"
-      : copyState === "error"
-        ? "Copy failed"
-        : "Copy token";
-
-  const isCopied = copyState === "copied";
-
-  async function handleCopy() {
-    if (!token) return;
-
-    try {
-      await navigator.clipboard.writeText(token);
-      setCopyState("copied");
-    } catch {
-      setCopyState("error");
-    }
-
-    if (timeoutRef.current) {
-      window.clearTimeout(timeoutRef.current);
-    }
-
-    timeoutRef.current = window.setTimeout(() => {
-      setCopyState("idle");
-      timeoutRef.current = null;
-    }, 1500);
-  }
+  const { copied, copy } = useCopyToClipboard();
 
   return (
     <InputGroupButton
       size="icon-sm"
-      aria-label={tooltipText}
-      onClick={() => {
-        void handleCopy();
-      }}
-      disabled={!token || copyState === "error" || copyState === "copied"}
+      aria-label={copied ? "Copied" : "Copy token"}
+      onClick={() => void copy(token)}
+      disabled={!token || copied}
     >
-      <HugeiconsIcon icon={isCopied ? Tick02Icon : Copy01Icon} size={12} />
+      <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={12} />
     </InputGroupButton>
   );
 }

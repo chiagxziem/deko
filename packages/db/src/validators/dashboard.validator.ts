@@ -49,23 +49,13 @@ export const ServiceTimeseriesStatsSchema = z.object({
   ),
 });
 
+const LogEventResponseSchema = createSelectSchema(logEvent).extend({
+  timestamp: z.iso.datetime().transform((n) => new Date(n)),
+  receivedAt: z.iso.datetime().transform((n) => new Date(n)),
+});
+
 export const ServiceLogListSchema = z.object({
-  logs: z.array(
-    z.object({
-      id: z.uuid(),
-      serviceId: z.uuid(),
-      timestamp: z.iso.datetime().transform((n) => new Date(n)),
-      level: LevelEnumSchema,
-      method: MethodEnumSchema,
-      path: z.string(),
-      status: z.number(),
-      duration: z.number(),
-      environment: z.string(),
-      requestId: z.string(),
-      message: z.string().nullable(),
-      sessionId: z.string().nullable(),
-    }),
-  ),
+  logs: z.array(LogEventResponseSchema),
   pagination: z.object({
     hasNext: z.boolean(),
     nextCursor: z.string().nullable(),
@@ -73,10 +63,7 @@ export const ServiceLogListSchema = z.object({
   }),
 });
 
-export const ServiceLogSchema = createSelectSchema(logEvent).extend({
-  timestamp: z.iso.datetime().transform((n) => new Date(n)),
-  receivedAt: z.iso.datetime().transform((n) => new Date(n)),
-});
+export const ServiceLogSchema = LogEventResponseSchema;
 
 export const StatusCodeBreakdownSchema = z.object({
   breakdown: z.array(
@@ -186,30 +173,8 @@ export const SlowLogsQuerySchema = LogsQuerySchema.extend({
   minDuration: z.coerce.number().min(1).default(1000),
 });
 
-// ---------------------------------------------------------------------------
-// Slow Logs – same paginated structure as ServiceLogListSchema but with an
-// added thresholdMs field that echoes the effective duration cutoff.
-// Returning thresholdMs is important when the route applies a default threshold
-// so the client knows which value was actually used.
-// ---------------------------------------------------------------------------
-
 export const SlowLogsResponseSchema = z.object({
-  logs: z.array(
-    z.object({
-      id: z.uuid(),
-      serviceId: z.uuid(),
-      timestamp: z.iso.datetime().transform((n) => new Date(n)),
-      level: LevelEnumSchema,
-      method: MethodEnumSchema,
-      path: z.string(),
-      status: z.number(),
-      duration: z.number(),
-      environment: z.string(),
-      requestId: z.string(),
-      message: z.string().nullable(),
-      sessionId: z.string().nullable(),
-    }),
-  ),
+  logs: z.array(LogEventResponseSchema),
   pagination: z.object({
     hasNext: z.boolean(),
     nextCursor: z.string().nullable(),

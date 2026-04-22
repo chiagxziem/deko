@@ -152,6 +152,8 @@ interface DataTableProps<TData, TValue> {
   pagination?: PaginationState;
   /** Pagination state setter (required when using rowCount for server-side pagination). */
   onPaginationChange?: Dispatch<SetStateAction<PaginationState>>;
+  /** Optional rows rendered at the end of the table body (e.g. infinite-loading rows). */
+  tableBodyAppend?: ReactNode;
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
@@ -178,6 +180,7 @@ export const DataTable = <TData, TValue>({
   rowCount,
   pagination: controlledPagination,
   onPaginationChange: setControlledPagination,
+  tableBodyAppend,
 }: DataTableProps<TData, TValue>) => {
   const isServerSide = rowCount !== undefined;
 
@@ -657,46 +660,54 @@ export const DataTable = <TData, TValue>({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                className={cn(onRowClick && "cursor-pointer")}
-                data-state={row.getIsSelected() && "selected"}
-                key={row.id}
-                onClick={
-                  onRowClick
-                    ? (e: React.MouseEvent) => {
-                        // Don't fire when clicking interactive elements or portaled
-                        // dialogs/menus — their e.target lives in document.body but
-                        // React still bubbles synthetic events up the fiber tree.
-                        const target = e.target as Element;
-                        if (
-                          target.closest(
-                            'button, a, input, select, textarea, [role="button"], [role="menuitem"], [role="menu"], [role="dialog"], [role="alertdialog"], [role="option"], [role="listbox"]',
-                          )
-                        ) {
-                          return;
+            <>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  className={cn(onRowClick && "cursor-pointer")}
+                  data-state={row.getIsSelected() && "selected"}
+                  key={row.id}
+                  onClick={
+                    onRowClick
+                      ? (e: React.MouseEvent) => {
+                          // Don't fire when clicking interactive elements or portaled
+                          // dialogs/menus — their e.target lives in document.body but
+                          // React still bubbles synthetic events up the fiber tree.
+                          const target = e.target as Element;
+                          if (
+                            target.closest(
+                              'button, a, input, select, textarea, [role="button"], [role="menuitem"], [role="menu"], [role="dialog"], [role="alertdialog"], [role="option"], [role="listbox"]',
+                            )
+                          ) {
+                            return;
+                          }
+                          onRowClick(row.original);
                         }
-                        onRowClick(row.original);
+                      : undefined
+                  }
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={
+                        (
+                          cell.column.columnDef.meta as
+                            | Record<string, string>
+                            | undefined
+                        )?.cellClassName
                       }
-                    : undefined
-                }
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={
-                      (
-                        cell.column.columnDef.meta as
-                          | Record<string, string>
-                          | undefined
-                      )?.cellClassName
-                    }
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+              {tableBodyAppend}
+            </>
+          ) : tableBodyAppend ? (
+            <>{tableBodyAppend}</>
           ) : (
             <TableRow>
               <TableCell

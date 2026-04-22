@@ -7,7 +7,6 @@ import {
   LogsQuerySchema,
   MethodEnumSchema,
   PeriodEnumSchema,
-  ServiceLogList,
   ServiceOverviewStats,
   ServiceTimeseriesStats,
   SlowLogsQuerySchema,
@@ -417,12 +416,8 @@ export const createDashboardRouter = ({
         }
       }
 
-      const logList: ServiceLogList = {
-        logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => ({
-          ...log,
-          level: log.level,
-          method: log.method,
-        })),
+      const logList = {
+        logs,
         pagination: {
           hasNext: logs.length === limit,
           nextCursor,
@@ -510,6 +505,7 @@ export const createDashboardRouter = ({
         path,
         to,
         from,
+        search,
         cursor,
         limit,
         exactCount,
@@ -561,6 +557,7 @@ export const createDashboardRouter = ({
         path,
         to,
         from,
+        search,
         limit,
         minDuration,
         cursor:
@@ -591,6 +588,7 @@ export const createDashboardRouter = ({
           path,
           to,
           from,
+          search,
           minDuration,
         });
 
@@ -609,6 +607,7 @@ export const createDashboardRouter = ({
             path,
             to,
             from,
+            search,
             minDuration,
           });
           await setCountInCache(cacheKey, totalEstimate);
@@ -618,7 +617,7 @@ export const createDashboardRouter = ({
       return c.json(
         successResponse(
           {
-            logs: logs.map(({ ipHash: _ih, userAgent: _ua, ...log }) => log),
+            logs,
             pagination: {
               hasNext: logs.length === limit,
               nextCursor,

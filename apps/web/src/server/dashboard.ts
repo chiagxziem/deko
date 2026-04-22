@@ -9,19 +9,8 @@ import {
   SlowLogsResponseSchema,
 } from "@repo/db/validators/dashboard.validator";
 
-import { $fetch } from "@/lib/fetch";
+import { $fetchAndThrow } from "@/lib/fetch";
 import { successResSchema } from "@/lib/schemas";
-
-// function buildQueryString(params: Record<string, unknown>): string {
-//   const searchParams = new URLSearchParams();
-//   for (const [key, value] of Object.entries(params)) {
-//     if (value !== undefined && value !== null && value !== "") {
-//       searchParams.set(key, String(value));
-//     }
-//   }
-//   const qs = searchParams.toString();
-//   return qs ? `?${qs}` : "";
-// }
 
 // ————— get service logs ———————————————————
 export const $getServiceLogs = createServerFn()
@@ -36,16 +25,11 @@ export const $getServiceLogs = createServerFn()
   .handler(async ({ data }) => {
     const { serviceId, ...filters } = data;
 
-    const { data: res, error } = await $fetch(`/dashboard/:serviceId/logs`, {
+    const res = await $fetchAndThrow(`/dashboard/:serviceId/logs`, {
       params: { serviceId },
       query: filters,
       output: successResSchema(ServiceLogListSchema),
     });
-
-    if (error) {
-      console.error(error);
-      return null;
-    }
 
     return res.data;
   });
@@ -63,19 +47,11 @@ export const $getSlowLogs = createServerFn()
   .handler(async ({ data }) => {
     const { serviceId, ...filters } = data;
 
-    const { data: res, error } = await $fetch(
-      `/dashboard/:serviceId/logs/slow`,
-      {
-        params: { serviceId },
-        query: filters,
-        output: successResSchema(SlowLogsResponseSchema),
-      },
-    );
-
-    if (error) {
-      console.error(error);
-      return null;
-    }
+    const res = await $fetchAndThrow(`/dashboard/:serviceId/logs/slow`, {
+      params: { serviceId },
+      query: filters,
+      output: successResSchema(SlowLogsResponseSchema),
+    });
 
     return res.data;
   });
@@ -92,19 +68,11 @@ export const $getSingleLog = createServerFn()
   .handler(async ({ data }) => {
     const { serviceId, logId, timestamp } = data;
 
-    const { data: res, error } = await $fetch(
-      `/dashboard/:serviceId/logs/:logId`,
-      {
-        params: { serviceId, logId },
-        query: { timestamp },
-        output: successResSchema(ServiceLogSchema),
-      },
-    );
-
-    if (error) {
-      console.error(error);
-      return null;
-    }
+    const res = await $fetchAndThrow(`/dashboard/:serviceId/logs/:logId`, {
+      params: { serviceId, logId },
+      query: { timestamp },
+      output: successResSchema(ServiceLogSchema),
+    });
 
     return res.data;
   });

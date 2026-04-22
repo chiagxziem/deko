@@ -40,7 +40,7 @@ export function AppHeader() {
   const homeHref = serviceId ? `/services/${serviceId}/overview` : "/";
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border/50 px-4">
+    <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background px-4">
       <div className="flex items-center gap-1.5">
         <SidebarTrigger size={"icon"} className="-ml-1" />
         <span

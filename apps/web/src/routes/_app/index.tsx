@@ -11,10 +11,6 @@ export const Route = createFileRoute("/_app/")({
       servicesQueryOptions(),
     );
 
-    if (!services) {
-      throw redirect({ to: "/get-started" });
-    }
-
     const serviceId = await $resolveDefaultServiceId({ data: services });
 
     if (!serviceId) {

@@ -40,3 +40,12 @@ export const handleError = (err: Error, defaultMessage: string) => {
     toast.error(defaultMessage);
   }
 };
+
+/**
+ * Truncates a string to show the first `head` and last `tail` characters with an ellipsis in between.
+ * If the string is short enough to fit without truncation, it is returned as-is.
+ */
+export const truncateMiddle = (str: string, head = 10, tail = 10): string => {
+  if (str.length <= head + tail + 1) return str;
+  return `${str.slice(0, head)}\u2026${str.slice(-tail)}`;
+};

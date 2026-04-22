@@ -9,7 +9,7 @@ import {
 } from "@repo/db/validators/service.validator";
 
 import { $getLastServiceId, $setLastServiceId } from "@/lib/cookies";
-import { $fetch, $fetchAndThrow } from "@/lib/fetch";
+import { $fetchAndThrow } from "@/lib/fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { successResSchema } from "@/lib/schemas";
 
@@ -38,14 +38,9 @@ export const $setLastService = createServerFn()
 
 // ————— get all services ———————————————————
 export const $getAllServices = createServerFn().handler(async () => {
-  const { data: res, error } = await $fetch("/services", {
+  const res = await $fetchAndThrow("/services", {
     output: successResSchema(z.array(ServiceSelectSchema)),
   });
-
-  if (error) {
-    console.error(error);
-    return null;
-  }
 
   return res.data;
 });
@@ -73,7 +68,7 @@ export const $createService = createServerFn({ method: "POST" })
 export const $getSingleService = createServerFn()
   .inputValidator(z.uuid())
   .handler(async ({ data: serviceId }) => {
-    const { data: res, error } = await $fetch("/services/:serviceId", {
+    const res = await $fetchAndThrow("/services/:serviceId", {
       params: { serviceId },
       output: successResSchema(
         ServiceSelectSchema.extend({
@@ -81,11 +76,6 @@ export const $getSingleService = createServerFn()
         }),
       ),
     });
-
-    if (error) {
-      console.error(error);
-      return null;
-    }
 
     return res.data;
   });

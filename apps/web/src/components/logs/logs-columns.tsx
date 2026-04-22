@@ -9,6 +9,7 @@ export interface LogEntry {
   id: string;
   serviceId: string;
   timestamp: string | Date;
+  receivedAt: string | Date;
   level: "debug" | "info" | "warn" | "error";
   method: string;
   path: string;
@@ -16,39 +17,42 @@ export interface LogEntry {
   duration: number;
   environment: string;
   requestId: string;
+  ipHash: string;
+  userAgent: string;
   message: string | null;
   sessionId: string | null;
+  meta: unknown;
 }
 
 const LEVEL_STYLES: Record<string, string> = {
-  error: "bg-red-500/15 text-red-400 border-red-500/20",
-  warn: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-  info: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  debug: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
+  error: "bg-red-500/15 text-red-600 border-red-500/20 dark:text-red-400",
+  warn: "bg-amber-500/15 text-amber-600 border-amber-500/20 dark:text-amber-400",
+  info: "bg-blue-500/15 text-blue-600 border-blue-500/20 dark:text-blue-400",
+  debug: "bg-zinc-500/15 text-zinc-600 border-zinc-500/20 dark:text-zinc-400",
 };
 
 const METHOD_STYLES: Record<string, string> = {
-  GET: "text-emerald-400",
-  POST: "text-blue-400",
-  PUT: "text-amber-400",
-  PATCH: "text-orange-400",
-  DELETE: "text-red-400",
-  OPTIONS: "text-zinc-400",
-  HEAD: "text-zinc-400",
-  CONNECT: "text-zinc-400",
-  TRACE: "text-zinc-400",
+  GET: "text-emerald-600 dark:text-emerald-400",
+  POST: "text-blue-600 dark:text-blue-400",
+  PUT: "text-amber-600 dark:text-amber-400",
+  PATCH: "text-orange-600 dark:text-orange-400",
+  DELETE: "text-red-600 dark:text-red-400",
+  OPTIONS: "text-zinc-600 dark:text-zinc-400",
+  HEAD: "text-zinc-600 dark:text-zinc-400",
+  CONNECT: "text-zinc-600 dark:text-zinc-400",
+  TRACE: "text-zinc-600 dark:text-zinc-400",
 };
 
 function statusColor(status: number): string {
-  if (status >= 500) return "text-red-400";
-  if (status >= 400) return "text-amber-400";
-  if (status >= 300) return "text-blue-400";
-  return "text-emerald-400";
+  if (status >= 500) return "text-red-600 dark:text-red-400";
+  if (status >= 400) return "text-amber-600 dark:text-amber-400";
+  if (status >= 300) return "text-blue-600 dark:text-blue-400";
+  return "text-emerald-600 dark:text-emerald-400";
 }
 
 function durationColor(ms: number): string {
-  if (ms >= 1000) return "text-red-400";
-  if (ms >= 500) return "text-amber-400";
+  if (ms >= 1000) return "text-red-600 dark:text-red-400";
+  if (ms >= 500) return "text-amber-600 dark:text-amber-400";
   return "text-muted-foreground";
 }
 
@@ -69,7 +73,7 @@ export const logsColumns: ColumnDef<LogEntry>[] = [
     enableSorting: false,
     meta: { headerClassName: "w-35" },
     cell: ({ row }) => (
-      <span className="font-mono text-[11px] text-muted-foreground">
+      <span className="font-mono text-[11px] font-semibold text-muted-foreground">
         {formatTimestamp(row.original.timestamp)}
       </span>
     ),
@@ -78,14 +82,14 @@ export const logsColumns: ColumnDef<LogEntry>[] = [
     accessorKey: "level",
     header: "Level",
     enableSorting: false,
-    meta: { headerClassName: "w-17.5" },
+    meta: { headerClassName: "w-18" },
     filterFn: (row, _id, filterValue: string[]) =>
-      filterValue.includes(row.getValue(_id) as string),
+      filterValue.includes(row.getValue(_id)),
     cell: ({ row }) => (
       <Badge
         variant="outline"
         className={cn(
-          "text-[10px] uppercase",
+          "text-[10px] font-semibold uppercase",
           LEVEL_STYLES[row.original.level],
         )}
       >
@@ -123,7 +127,10 @@ export const logsColumns: ColumnDef<LogEntry>[] = [
       filterValue.includes(String(row.getValue(_id))),
     cell: ({ row }) => (
       <span
-        className={cn("font-mono text-xs", statusColor(row.original.status))}
+        className={cn(
+          "font-mono text-xs font-semibold",
+          statusColor(row.original.status),
+        )}
       >
         {row.original.status}
       </span>
@@ -150,7 +157,7 @@ export const logsColumns: ColumnDef<LogEntry>[] = [
     header: "Message",
     enableSorting: false,
     meta: {
-      headerClassName: "hidden lg:table-cell w-50",
+      headerClassName: "hidden lg:table-cell w-96",
       cellClassName: "hidden lg:table-cell max-w-50 truncate",
     },
     cell: ({ row }) => (

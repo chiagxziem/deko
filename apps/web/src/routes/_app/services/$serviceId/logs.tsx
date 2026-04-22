@@ -1,13 +1,12 @@
-import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   useNavigate,
   useParams,
   useSearch,
 } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDebounce } from "@uidotdev/usehooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import { LogDetailPanel } from "@/components/logs/log-detail-panel";
@@ -16,8 +15,11 @@ import {
   logsColumns,
   logsFilters,
 } from "@/components/logs/logs-columns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryKeys } from "@/lib/query-keys";
 import { $getServiceLogs, $getSlowLogs } from "@/server/dashboard";
@@ -42,10 +44,18 @@ const logsSearchSchema = z.object({
     ])
     .optional()
     .catch(undefined),
-  cursor: z.string().optional().catch(undefined),
   logId: z.string().optional().catch(undefined),
   timestamp: z.string().optional().catch(undefined),
 });
+
+type LogsPageResult = {
+  logs: LogEntry[];
+  pagination: {
+    hasNext: boolean;
+    nextCursor: string | null;
+    totalEstimate: number | null;
+  };
+};
 
 export const Route = createFileRoute("/_app/services/$serviceId/logs")({
   validateSearch: logsSearchSchema,
@@ -58,23 +68,36 @@ function LogsPage() {
   const navigate = useNavigate();
 
   const period = usePeriodStore((s) => s.period);
-  const [cursorHistory, setCursorHistory] = useState<string[]>([]);
   const [searchValue, setSearchValue] = useState(searchParams.search ?? "");
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const debouncedSearch = useDebounce(searchValue, 300);
+  const searchParamsRef = useRef(searchParams);
 
   const isSlowView = searchParams.view === "slow";
 
-  useEffect(() => {
-    setSearchValue(searchParams.search ?? "");
-  }, [searchParams.search]);
+  const selectedLog =
+    searchParams.logId && searchParams.timestamp
+      ? { logId: searchParams.logId, timestamp: searchParams.timestamp }
+      : null;
 
   useEffect(() => {
-    return () => {
-      clearTimeout(searchDebounceRef.current);
-    };
-  }, []);
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
 
-  const logsQuery = useQuery({
+  // Sync debounced search value to URL
+  useEffect(() => {
+    const trimmed = debouncedSearch.trim();
+    const current = searchParamsRef.current.search ?? "";
+    if (trimmed === current) return;
+    void navigate({
+      to: "/services/$serviceId/logs",
+      params: { serviceId },
+      search: { ...searchParamsRef.current, search: trimmed || undefined },
+      replace: true,
+      resetScroll: false,
+    });
+  }, [debouncedSearch, navigate, serviceId]);
+
+  const logsQuery = useInfiniteQuery<LogsPageResult>({
     queryKey: queryKeys.logs(serviceId, {
       period,
       view: searchParams.view,
@@ -82,9 +105,11 @@ function LogsPage() {
       level: searchParams.level,
       method: searchParams.method,
       status: searchParams.status,
-      cursor: searchParams.cursor,
     }),
-    queryFn: async () => {
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const cursor = typeof pageParam === "string" ? pageParam : undefined;
+
       const params = {
         serviceId,
         period,
@@ -92,114 +117,118 @@ function LogsPage() {
         level: searchParams.level,
         method: searchParams.method,
         status: searchParams.status,
-        cursor: searchParams.cursor,
+        cursor,
         limit: 100,
       };
       if (isSlowView) {
         const result = await $getSlowLogs({
-          data: { ...params, minDuration: 1000 },
+          data: { ...params, minDuration: 500 },
         });
-        return result
-          ? { logs: result.logs, pagination: result.pagination }
-          : null;
+        return result as LogsPageResult;
       }
-      return $getServiceLogs({ data: params });
+      return (await $getServiceLogs({ data: params })) as LogsPageResult;
     },
-    placeholderData: keepPreviousData,
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
 
   const logs = useMemo(
-    () => logsQuery.data?.logs ?? [],
-    [logsQuery.data?.logs],
+    () => logsQuery.data?.pages.flatMap((p) => p.logs) ?? [],
+    [logsQuery.data?.pages],
   );
-  const pagination = logsQuery.data?.pagination;
+  const loadingColumnKeys = useMemo(
+    () =>
+      logsColumns.map((column) => {
+        if ("id" in column && typeof column.id === "string") {
+          return column.id;
+        }
+        if ("accessorKey" in column && typeof column.accessorKey === "string") {
+          return column.accessorKey;
+        }
+        return "column";
+      }),
+    [],
+  );
 
-  const navigateWithSearch = (
-    newSearch: Partial<z.infer<typeof logsSearchSchema>>,
-    replace = false,
-  ) => {
-    navigate({
-      to: "/services/$serviceId/logs",
-      params: { serviceId },
-      search: { ...searchParams, ...newSearch },
-      replace,
-    });
-  };
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = logsQuery;
 
-  const handleViewChange = (view: string) => {
-    setCursorHistory([]);
-    navigateWithSearch({ view: view as "all" | "slow", cursor: undefined });
-  };
+  const navigateWithSearch = useCallback(
+    (
+      newSearch: Partial<z.infer<typeof logsSearchSchema>>,
+      replace = false,
+      resetScroll = true,
+    ) => {
+      void navigate({
+        to: "/services/$serviceId/logs",
+        params: { serviceId },
+        search: { ...searchParamsRef.current, ...newSearch },
+        replace,
+        resetScroll,
+      });
+    },
+    [navigate, serviceId],
+  );
 
-  const handleSearchChange = (value: string) => {
+  const handleViewChange = useCallback(
+    (view: string) => {
+      navigateWithSearch({ view: view as "all" | "slow" });
+    },
+    [navigateWithSearch],
+  );
+
+  const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
-    clearTimeout(searchDebounceRef.current);
+  }, []);
 
-    searchDebounceRef.current = setTimeout(() => {
-      setCursorHistory([]);
-      navigateWithSearch(
-        {
-          search: value ? value : undefined,
-          cursor: undefined,
-        },
-        true,
-      );
-    }, 300);
-  };
+  const handleFilterChange = useCallback(
+    (columnId: string, values: string[]) => {
+      const selected = values[0];
 
-  const handleFilterChange = (columnId: string, values: string[]) => {
-    const selected = values[0];
-    setCursorHistory([]);
+      if (columnId === "level") {
+        navigateWithSearch(
+          {
+            level: selected as z.infer<typeof logsSearchSchema>["level"],
+          },
+          true,
+        );
+        return;
+      }
 
-    if (columnId === "level") {
-      navigateWithSearch(
-        {
-          level: selected as z.infer<typeof logsSearchSchema>["level"],
-          cursor: undefined,
-        },
-        true,
-      );
-      return;
-    }
+      if (columnId === "request") {
+        navigateWithSearch(
+          {
+            method: selected as z.infer<typeof logsSearchSchema>["method"],
+          },
+          true,
+        );
+        return;
+      }
 
-    if (columnId === "request") {
-      navigateWithSearch(
-        {
-          method: selected as z.infer<typeof logsSearchSchema>["method"],
-          cursor: undefined,
-        },
-        true,
-      );
-      return;
-    }
+      if (columnId === "status") {
+        const statusValue = selected ? Number(selected) : undefined;
+        navigateWithSearch(
+          {
+            status:
+              statusValue !== undefined && !Number.isNaN(statusValue)
+                ? statusValue
+                : undefined,
+          },
+          true,
+        );
+      }
+    },
+    [navigateWithSearch],
+  );
 
-    if (columnId === "status") {
-      const statusValue = selected ? Number(selected) : undefined;
-      navigateWithSearch(
-        {
-          status:
-            statusValue !== undefined && !Number.isNaN(statusValue)
-              ? statusValue
-              : undefined,
-          cursor: undefined,
-        },
-        true,
-      );
-    }
-  };
-
-  const handleClearAllFilters = () => {
-    setCursorHistory([]);
+  const handleClearAllFilters = useCallback(() => {
     navigateWithSearch(
       {
         level: undefined,
         method: undefined,
         status: undefined,
-        cursor: undefined,
       },
       true,
     );
-  };
+  }, [navigateWithSearch]);
 
   const activeFilterValues = useMemo(
     () => ({
@@ -211,34 +240,67 @@ function LogsPage() {
     [searchParams.level, searchParams.method, searchParams.status],
   );
 
-  const handleOlder = () => {
-    if (pagination?.nextCursor) {
-      setCursorHistory((prev) => [...prev, searchParams.cursor ?? ""]);
-      navigateWithSearch({ cursor: pagination.nextCursor });
-    }
-  };
+  const handleSelectLog = useCallback(
+    (log: LogEntry) => {
+      const ts =
+        typeof log.timestamp === "string"
+          ? log.timestamp
+          : log.timestamp.toISOString();
+      navigateWithSearch({ logId: log.id, timestamp: ts }, false, false);
+    },
+    [navigateWithSearch],
+  );
 
-  const handleNewer = () => {
-    if (cursorHistory.length > 0) {
-      const prevCursor = cursorHistory[cursorHistory.length - 1];
-      setCursorHistory((prev) => prev.slice(0, -1));
-      navigateWithSearch({ cursor: prevCursor || undefined });
-    }
-  };
+  const handleCloseDetail = useCallback(() => {
+    navigateWithSearch(
+      { logId: undefined, timestamp: undefined },
+      false,
+      false,
+    );
+  }, [navigateWithSearch]);
 
-  const handleSelectLog = (log: LogEntry) => {
-    const ts =
-      typeof log.timestamp === "string"
-        ? log.timestamp
-        : log.timestamp.toISOString();
-    navigateWithSearch({ logId: log.id, timestamp: ts });
-  };
+  const handleLoadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleCloseDetail = () => {
-    navigateWithSearch({ logId: undefined, timestamp: undefined });
-  };
+  const tableBodyAppend = useMemo(
+    () =>
+      logsQuery.isPending || isFetchingNextPage ? (
+        <InfiniteLoadingRows columnKeys={loadingColumnKeys} />
+      ) : undefined,
+    [logsQuery.isPending, isFetchingNextPage, loadingColumnKeys],
+  );
 
-  const showPagination = pagination?.hasNext || cursorHistory.length > 0;
+  const tableElement = useMemo(
+    () => (
+      <DataTable
+        columns={logsColumns}
+        data={logs}
+        filters={logsFilters}
+        searchValue={searchValue}
+        onSearchChange={handleSearchChange}
+        activeFilterValues={activeFilterValues}
+        onFilterChange={handleFilterChange}
+        onClearAllFilters={handleClearAllFilters}
+        manualFiltering
+        defaultPagination={{ pageIndex: 0, pageSize: 10000 }}
+        emptyMessage="No logs found. Try adjusting your filters or time range."
+        onRowClick={handleSelectLog}
+        tableBodyAppend={tableBodyAppend}
+      />
+    ),
+    [
+      logs,
+      searchValue,
+      handleSearchChange,
+      activeFilterValues,
+      handleFilterChange,
+      handleClearAllFilters,
+      handleSelectLog,
+      tableBodyAppend,
+    ],
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -256,60 +318,82 @@ function LogsPage() {
         </TabsList>
       </Tabs>
 
-      <DataTable
-        columns={logsColumns}
-        data={logs}
-        filters={logsFilters}
-        searchValue={searchValue}
-        onSearchChange={handleSearchChange}
-        activeFilterValues={activeFilterValues}
-        onFilterChange={handleFilterChange}
-        onClearAllFilters={handleClearAllFilters}
-        enableFuzzyGlobalFilter
-        defaultPagination={{ pageIndex: 0, pageSize: 200 }}
-        emptyMessage={
-          logsQuery.isLoading
-            ? "Loading logs..."
-            : "No logs found. Try adjusting your filters or time range."
-        }
-        onRowClick={handleSelectLog}
-      />
+      {logsQuery.isError ? (
+        <LogsTableError onRetry={() => logsQuery.refetch()} />
+      ) : (
+        <>
+          {tableElement}
 
-      {showPagination && (
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNewer}
-            disabled={cursorHistory.length === 0}
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
-            Newer
-          </Button>
-          <div className="text-xs text-muted-foreground">
-            {logs.length > 0 && `Showing ${logs.length} logs`}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleOlder}
-            disabled={!pagination?.hasNext}
-          >
-            Older
-            <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
-          </Button>
-        </div>
+          {!logsQuery.isPending && hasNextPage && (
+            <div className="flex items-center justify-center pt-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? "Loading more logs..." : "Load more"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
-      {searchParams.logId && searchParams.timestamp && (
+      {selectedLog && (
         <LogDetailPanel
           serviceId={serviceId}
-          logId={searchParams.logId}
-          timestamp={searchParams.timestamp}
-          open={!!searchParams.logId}
+          logId={selectedLog.logId}
+          timestamp={selectedLog.timestamp}
+          open
           onClose={handleCloseDetail}
         />
       )}
+    </div>
+  );
+}
+
+function InfiniteLoadingRows({ columnKeys }: { columnKeys: string[] }) {
+  const rowKeys = ["first", "second", "third"] as const;
+
+  return (
+    <>
+      {rowKeys.map((rowKey) => (
+        <TableRow
+          key={`logs-loading-row-${rowKey}`}
+          aria-hidden
+          className="pointer-events-none animate-in duration-200 fade-in-0"
+        >
+          {columnKeys.map((columnKey) => (
+            <TableCell key={`logs-loading-cell-${rowKey}-${columnKey}`}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function LogsTableError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <Alert variant="destructive" className="max-w-2xl">
+        <AlertTitle>Failed to load logs</AlertTitle>
+        <AlertDescription>
+          We couldn&apos;t fetch logs right now. Try again.
+        </AlertDescription>
+      </Alert>
+
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="w-fit"
+        onClick={onRetry}
+      >
+        Retry
+      </Button>
     </div>
   );
 }
