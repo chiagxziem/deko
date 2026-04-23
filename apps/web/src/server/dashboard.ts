@@ -2,11 +2,23 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
+  ErrorGroupQuerySchema,
+  ErrorGroupsResponseSchema,
+  LogLevelBreakdownQuerySchema,
+  LogLevelBreakdownSchema,
   LogsQuerySchema,
   ServiceLogListSchema,
   ServiceLogSchema,
+  ServiceOverviewQuerySchema,
+  ServiceOverviewStatsSchema,
+  ServiceTimeseriesQuerySchema,
+  ServiceTimeseriesStatsSchema,
   SlowLogsQuerySchema,
   SlowLogsResponseSchema,
+  StatusBreakdownQuerySchema,
+  StatusCodeBreakdownSchema,
+  TopEndpointsQuerySchema,
+  TopEndpointsResponseSchema,
 } from "@repo/db/validators/dashboard.validator";
 
 import { $fetchAndThrow } from "@/lib/fetch";
@@ -72,6 +84,105 @@ export const $getSingleLog = createServerFn()
       params: { serviceId, logId },
       query: { timestamp },
       output: successResSchema(ServiceLogSchema),
+    });
+
+    return res.data;
+  });
+
+// ————— get overview stats ———————————————————
+export const $getOverviewStats = createServerFn()
+  .inputValidator(ServiceOverviewQuerySchema.extend({ serviceId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { serviceId, ...query } = data;
+
+    const res = await $fetchAndThrow(`/dashboard/:serviceId/stats/overview`, {
+      params: { serviceId },
+      query,
+      output: successResSchema(ServiceOverviewStatsSchema),
+    });
+
+    return res.data;
+  });
+
+// ————— get timeseries stats ———————————————————
+export const $getTimeseriesStats = createServerFn()
+  .inputValidator(ServiceTimeseriesQuerySchema.extend({ serviceId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { serviceId, ...query } = data;
+
+    const res = await $fetchAndThrow(`/dashboard/:serviceId/stats/timeseries`, {
+      params: { serviceId },
+      query,
+      output: successResSchema(ServiceTimeseriesStatsSchema),
+    });
+
+    return res.data;
+  });
+
+// ————— get status code breakdown ———————————————————
+export const $getStatusBreakdown = createServerFn()
+  .inputValidator(StatusBreakdownQuerySchema.extend({ serviceId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { serviceId, ...query } = data;
+
+    const res = await $fetchAndThrow(
+      `/dashboard/:serviceId/stats/status-breakdown`,
+      {
+        params: { serviceId },
+        query,
+        output: successResSchema(StatusCodeBreakdownSchema),
+      },
+    );
+
+    return res.data;
+  });
+
+// ————— get log level breakdown ———————————————————
+export const $getLogLevelBreakdown = createServerFn()
+  .inputValidator(LogLevelBreakdownQuerySchema.extend({ serviceId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { serviceId, ...query } = data;
+
+    const res = await $fetchAndThrow(
+      `/dashboard/:serviceId/stats/log-level-breakdown`,
+      {
+        params: { serviceId },
+        query,
+        output: successResSchema(LogLevelBreakdownSchema),
+      },
+    );
+
+    return res.data;
+  });
+
+// ————— get top endpoints ———————————————————
+export const $getTopEndpoints = createServerFn()
+  .inputValidator(TopEndpointsQuerySchema.extend({ serviceId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { serviceId, ...query } = data;
+
+    const res = await $fetchAndThrow(
+      `/dashboard/:serviceId/stats/top-endpoints`,
+      {
+        params: { serviceId },
+        query,
+        output: successResSchema(TopEndpointsResponseSchema),
+      },
+    );
+
+    return res.data;
+  });
+
+// ————— get error groups ———————————————————
+export const $getErrorGroups = createServerFn()
+  .inputValidator(ErrorGroupQuerySchema.extend({ serviceId: z.uuid() }))
+  .handler(async ({ data }) => {
+    const { serviceId, ...query } = data;
+
+    const res = await $fetchAndThrow(`/dashboard/:serviceId/errors/groups`, {
+      params: { serviceId },
+      query,
+      output: successResSchema(ErrorGroupsResponseSchema),
     });
 
     return res.data;
