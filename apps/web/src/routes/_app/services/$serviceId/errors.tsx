@@ -1,10 +1,61 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMemo } from "react";
+
+import type { ErrorGroup } from "@repo/db/validators/dashboard.validator";
+
+import { errorGroupColumns } from "@/components/errors/error-group-columns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DataTable } from "@/components/ui/data-table";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { queryKeys } from "@/lib/query-keys";
+import { $getErrorGroups } from "@/server/dashboard";
+import { usePeriodStore } from "@/stores/period-store";
 
 export const Route = createFileRoute("/_app/services/$serviceId/errors")({
   component: ErrorsPage,
 });
 
+const EMPTY_ERROR_GROUPS: ErrorGroup[] = [];
+const ERROR_GROUP_LOADING_COLUMN_KEYS = errorGroupColumns.map((column) => {
+  if ("id" in column && typeof column.id === "string") {
+    return column.id;
+  }
+  if ("accessorKey" in column && typeof column.accessorKey === "string") {
+    return column.accessorKey;
+  }
+  return "column";
+});
+
 function ErrorsPage() {
+  const { serviceId } = useParams({
+    from: "/_app/services/$serviceId/errors",
+  });
+  const period = usePeriodStore((s) => s.period);
+
+  const getErrorGroups = useServerFn($getErrorGroups);
+
+  const errorGroupsQuery = useQuery({
+    queryKey: queryKeys.errorGroups(serviceId, { period }),
+    queryFn: () => getErrorGroups({ data: { serviceId, period, limit: 100 } }),
+  });
+
+  const tableBodyAppend = useMemo(
+    () =>
+      errorGroupsQuery.isPending ? (
+        <LoadingRows columnKeys={ERROR_GROUP_LOADING_COLUMN_KEYS} />
+      ) : undefined,
+    [errorGroupsQuery.isPending],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -14,7 +65,55 @@ function ErrorsPage() {
         </p>
       </div>
 
-      <div className="h-96 rounded-lg border border-border/50 bg-card" />
+      {errorGroupsQuery.isError ? (
+        <Alert variant="destructive" className="max-w-2xl">
+          <AlertTitle>Could not load errors</AlertTitle>
+          <AlertDescription>
+            An unexpected error occurred while loading error groups.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!errorGroupsQuery.isPending &&
+      errorGroupsQuery.data?.groups.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>No errors</EmptyTitle>
+            <EmptyDescription>
+              No error groups found for the selected period.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <DataTable
+          columns={errorGroupColumns}
+          data={errorGroupsQuery.data?.groups ?? EMPTY_ERROR_GROUPS}
+          emptyMessage="No error groups found for the selected period."
+          tableBodyAppend={tableBodyAppend}
+        />
+      )}
     </div>
+  );
+}
+
+function LoadingRows({ columnKeys }: { columnKeys: string[] }) {
+  const rowKeys = ["first", "second", "third"] as const;
+
+  return (
+    <>
+      {rowKeys.map((rowKey) => (
+        <TableRow
+          key={`errors-loading-row-${rowKey}`}
+          aria-hidden
+          className="pointer-events-none animate-in duration-200 fade-in-0"
+        >
+          {columnKeys.map((columnKey) => (
+            <TableCell key={`errors-loading-cell-${rowKey}-${columnKey}`}>
+              <Skeleton className="h-4 w-full" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
   );
 }
