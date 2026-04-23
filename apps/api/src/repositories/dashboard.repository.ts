@@ -125,10 +125,10 @@ export class DashboardRepository implements IDashboardRepository {
       SELECT
         COUNT(*)::int AS "totalRequests",
         COUNT(*) FILTER (WHERE status >= 400)::int AS "errorCount",
-        COALESCE(AVG(duration), 0)::real AS "avgDuration",
-        COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY duration), 0)::real AS "p50Duration",
-        COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration), 0)::real AS "p95Duration",
-        COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration), 0)::real AS "p99Duration"
+        ROUND(COALESCE(AVG(duration), 0)::numeric, 3)::real AS "avgDuration",
+        ROUND(COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY duration), 0)::numeric, 3)::real AS "p50Duration",
+        ROUND(COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration), 0)::numeric, 3)::real AS "p95Duration",
+        ROUND(COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration), 0)::numeric, 3)::real AS "p99Duration"
       FROM log_event
       WHERE ${and(...conditions)}
     `);
@@ -280,7 +280,7 @@ export class DashboardRepository implements IDashboardRepository {
     });
 
     const [{ count: total }] = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(logEvent)
       .where(and(...conditions));
 
@@ -289,8 +289,8 @@ export class DashboardRepository implements IDashboardRepository {
         ? await db
             .select({
               status: logEvent.status,
-              count: sql<number>`count(*)`,
-              percentage: sql<number>`count(*)::real / ${total} * 100`,
+              count: sql<number>`count(*)::int`,
+              percentage: sql<number>`COALESCE(count(*)::real / NULLIF(${total}::real, 0) * 100, 0)::real`,
             })
             .from(logEvent)
             .where(and(...conditions))
@@ -317,7 +317,7 @@ export class DashboardRepository implements IDashboardRepository {
                 END
               `,
               count: sql<number>`count(*)::int`,
-              percentage: sql<number>`count(*)::real / ${total} * 100`,
+              percentage: sql<number>`COALESCE(count(*)::real / NULLIF(${total}::real, 0) * 100, 0)::real`,
             })
             .from(logEvent)
             .where(and(...conditions))
@@ -359,15 +359,15 @@ export class DashboardRepository implements IDashboardRepository {
     });
 
     const [{ count: total }] = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(logEvent)
       .where(and(...conditions));
 
     const breakdown = await db
       .select({
         level: logEvent.level,
-        count: sql<number>`count(*)`,
-        percentage: sql<number>`count(*)::real / ${total} * 100`,
+        count: sql<number>`count(*)::int`,
+        percentage: sql<number>`COALESCE(count(*)::real / NULLIF(${total}::real, 0) * 100, 0)::real`,
       })
       .from(logEvent)
       .where(and(...conditions))
@@ -425,9 +425,9 @@ export class DashboardRepository implements IDashboardRepository {
         path,
         COUNT(*)::int AS requests,
         COUNT(*) FILTER (WHERE status >= 400)::int AS errors,
-        COALESCE(AVG(duration), 0)::real AS "avgDuration",
-        COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration), 0)::real AS "p95Duration",
-        COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration), 0)::real AS "p99Duration"
+        ROUND(COALESCE(AVG(duration), 0)::numeric, 3)::real AS "avgDuration",
+        ROUND(COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration), 0)::numeric, 3)::real AS "p95Duration",
+        ROUND(COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration), 0)::numeric, 3)::real AS "p99Duration"
       FROM log_event
       WHERE ${and(...conditions)}
       GROUP BY method, path

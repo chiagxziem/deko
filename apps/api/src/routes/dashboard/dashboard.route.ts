@@ -2,15 +2,16 @@ import { validator } from "hono-openapi";
 import { z } from "zod";
 
 import {
-  GranularityEnumSchema,
-  LevelEnumSchema,
+  ErrorGroupQuerySchema,
+  LogLevelBreakdownQuerySchema,
   LogsQuerySchema,
-  MethodEnumSchema,
-  PeriodEnumSchema,
+  ServiceOverviewQuerySchema,
   ServiceOverviewStats,
+  ServiceTimeseriesQuerySchema,
   ServiceTimeseriesStats,
   SlowLogsQuerySchema,
-  TopEndpointSortBySchema,
+  StatusBreakdownQuerySchema,
+  TopEndpointsQuerySchema,
 } from "@repo/db/validators/dashboard.validator";
 
 import { createRouter } from "@/app";
@@ -65,14 +66,7 @@ export const createDashboardRouter = ({
     "/:serviceId/stats/overview",
     getServiceOverviewStatsDoc,
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
-    validator(
-      "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        environment: z.string().optional(),
-      }),
-      validationHook,
-    ),
+    validator("query", ServiceOverviewQuerySchema, validationHook),
     async (c) => {
       const { serviceId } = c.req.valid("param");
       const { period, environment } = c.req.valid("query");
@@ -186,9 +180,7 @@ export const createDashboardRouter = ({
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
     validator(
       "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        granularity: GranularityEnumSchema.optional(),
+      ServiceTimeseriesQuerySchema.extend({
         metrics: z
           .string()
           .default(
@@ -197,10 +189,6 @@ export const createDashboardRouter = ({
           .describe(
             "Comma separated list of metrics to retrieve. Valid values: requests, errors, avg_duration, p50_duration, p95_duration, p99_duration",
           ),
-        environment: z.string().optional(),
-        method: MethodEnumSchema.optional(),
-        path: z.string().optional(),
-        level: LevelEnumSchema.optional(),
       }),
       validationHook,
     ),
@@ -699,17 +687,7 @@ export const createDashboardRouter = ({
     "/:serviceId/stats/status-breakdown",
     getStatusCodeBreakdownDoc,
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
-    validator(
-      "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        environment: z.string().optional(),
-        groupBy: z
-          .union([z.literal("category"), z.literal("code")])
-          .default("category"),
-      }),
-      validationHook,
-    ),
+    validator("query", StatusBreakdownQuerySchema, validationHook),
     async (c) => {
       const { serviceId } = c.req.valid("param");
       const { period, environment, groupBy } = c.req.valid("query");
@@ -748,14 +726,7 @@ export const createDashboardRouter = ({
     "/:serviceId/stats/log-level-breakdown",
     getLogLevelBreakdownDoc,
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
-    validator(
-      "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        environment: z.string().optional(),
-      }),
-      validationHook,
-    ),
+    validator("query", LogLevelBreakdownQuerySchema, validationHook),
     async (c) => {
       const { serviceId } = c.req.valid("param");
       const { period, environment } = c.req.valid("query");
@@ -795,12 +766,7 @@ export const createDashboardRouter = ({
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
     validator(
       "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        sortBy: TopEndpointSortBySchema.default("requests"),
-        environment: z.string().optional(),
-        method: MethodEnumSchema.optional(),
-        // limit is capped at 50 to prevent excessively large payloads
+      TopEndpointsQuerySchema.extend({
         limit: z.coerce.number().min(1).max(50).default(10),
       }),
       validationHook,
@@ -848,11 +814,7 @@ export const createDashboardRouter = ({
     validator("param", z.object({ serviceId: z.uuid() }), validationHook),
     validator(
       "query",
-      z.object({
-        period: PeriodEnumSchema.default("24h"),
-        environment: z.string().optional(),
-        // limit is capped at 100. showing more than 100 distinct error fingerprints
-        // is rarely useful and starts to become noise rather than signal.
+      ErrorGroupQuerySchema.extend({
         limit: z.coerce.number().min(1).max(100).default(20),
       }),
       validationHook,

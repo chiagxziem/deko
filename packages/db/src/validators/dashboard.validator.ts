@@ -15,6 +15,11 @@ export const TopEndpointSortBySchema = z.enum([
   "p99_duration",
 ]);
 
+export const ServiceOverviewQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  environment: z.string().optional(),
+});
+
 export const ServiceOverviewStatsSchema = z.object({
   totalRequests: z.number(),
   errorCount: z.number(),
@@ -34,11 +39,21 @@ export const ServiceOverviewStatsSchema = z.object({
   }),
 });
 
+export const ServiceTimeseriesQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  granularity: GranularityEnumSchema.optional(),
+  metrics: z.string().optional(),
+  environment: z.string().optional(),
+  method: MethodEnumSchema.optional(),
+  path: z.string().optional(),
+  level: LevelEnumSchema.optional(),
+});
+
 export const ServiceTimeseriesStatsSchema = z.object({
   granularity: GranularityEnumSchema,
   buckets: z.array(
     z.object({
-      timestamp: z.iso.datetime().transform((n) => new Date(n)),
+      timestamp: z.coerce.date(),
       requests: z.number().optional(),
       errors: z.number().optional(),
       avgDuration: z.number().optional(),
@@ -65,6 +80,12 @@ export const ServiceLogListSchema = z.object({
 
 export const ServiceLogSchema = LogEventResponseSchema;
 
+export const StatusBreakdownQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  environment: z.string().optional(),
+  groupBy: z.enum(["category", "code"]).default("category"),
+});
+
 export const StatusCodeBreakdownSchema = z.object({
   breakdown: z.array(
     z.union([
@@ -84,6 +105,11 @@ export const StatusCodeBreakdownSchema = z.object({
   total: z.number(),
 });
 
+export const LogLevelBreakdownQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  environment: z.string().optional(),
+});
+
 export const LogLevelBreakdownSchema = z.object({
   breakdown: z.array(
     z.object({
@@ -93,6 +119,14 @@ export const LogLevelBreakdownSchema = z.object({
     }),
   ),
   total: z.number(),
+});
+
+export const TopEndpointsQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  sortBy: TopEndpointSortBySchema.default("requests"),
+  environment: z.string().optional(),
+  method: MethodEnumSchema.optional(),
+  limit: z.number().min(1).max(50).default(10),
 });
 
 export const TopEndpointSchema = z.object({
@@ -111,14 +145,20 @@ export const TopEndpointsResponseSchema = z.object({
   sortBy: TopEndpointSortBySchema,
 });
 
+export const ErrorGroupQuerySchema = z.object({
+  period: PeriodEnumSchema.default("24h"),
+  environment: z.string().optional(),
+  limit: z.number().min(1).max(100).default(20),
+});
+
 export const ErrorGroupSchema = z.object({
   method: MethodEnumSchema,
   path: z.string(),
   status: z.number(),
   message: z.string().nullable(),
   count: z.number(),
-  firstSeen: z.iso.datetime().transform((n) => new Date(n)),
-  lastSeen: z.iso.datetime().transform((n) => new Date(n)),
+  firstSeen: z.coerce.date(),
+  lastSeen: z.coerce.date(),
 });
 
 export const ErrorGroupsResponseSchema = z.object({
