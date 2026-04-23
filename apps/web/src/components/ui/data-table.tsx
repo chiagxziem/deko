@@ -330,6 +330,12 @@ export const DataTable = <TData, TValue>({
   });
 
   const currentPagination = table.getState().pagination;
+  const firstPage = 1;
+  const lastPage = table.getPageCount();
+  const includesFirstPage = pages.includes(firstPage);
+  const includesLastPage = pages.includes(lastPage);
+  const showLeadingFirstPage = !includesFirstPage;
+  const showTrailingLastPage = !includesLastPage;
 
   // Determine if page size selector should be shown
   const shouldShowPageSizeSelector =
@@ -755,6 +761,27 @@ export const DataTable = <TData, TValue>({
                 </PaginationItem>
 
                 {/* Left ellipsis (...) */}
+                {showLeadingFirstPage && (
+                  <PaginationItem>
+                    <Button
+                      aria-current={
+                        currentPagination.pageIndex + 1 === firstPage
+                          ? "page"
+                          : undefined
+                      }
+                      onClick={() => table.setPageIndex(firstPage - 1)}
+                      size="icon"
+                      variant={
+                        currentPagination.pageIndex + 1 === firstPage
+                          ? "outline"
+                          : "ghost"
+                      }
+                    >
+                      {firstPage}
+                    </Button>
+                  </PaginationItem>
+                )}
+
                 {showLeftEllipsis && (
                   <PaginationItem>
                     <PaginationEllipsis />
@@ -782,6 +809,27 @@ export const DataTable = <TData, TValue>({
                 {showRightEllipsis && (
                   <PaginationItem>
                     <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+
+                {showTrailingLastPage && (
+                  <PaginationItem>
+                    <Button
+                      aria-current={
+                        currentPagination.pageIndex + 1 === lastPage
+                          ? "page"
+                          : undefined
+                      }
+                      onClick={() => table.setPageIndex(lastPage - 1)}
+                      size="icon"
+                      variant={
+                        currentPagination.pageIndex + 1 === lastPage
+                          ? "outline"
+                          : "ghost"
+                      }
+                    >
+                      {lastPage}
+                    </Button>
                   </PaginationItem>
                 )}
 

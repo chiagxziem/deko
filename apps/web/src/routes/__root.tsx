@@ -41,7 +41,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="light" lang="en" suppressHydrationWarning>
+    <html className="dark" lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
