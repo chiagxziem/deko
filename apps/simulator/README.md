@@ -1,6 +1,6 @@
 # Simulator
 
-A Bun-powered traffic simulator for the Deko ingest API.
+A traffic simulator for the Deko ingest API.
 
 It generates realistic synthetic logs with variable traffic patterns so the dashboard can be tested with meaningful data distributions.
 

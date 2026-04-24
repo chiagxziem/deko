@@ -19,9 +19,9 @@ request:
     - name: BASE_URL
       value: http://localhost:8000
     - name: SERVICE_ID
-      value: your-service-uuid
+      value: fac44a62-b44d-4782-a12c-8c4513c3ef23
     - name: TOKEN_ID
-      value: your-token-uuid
+      value: deko_sk_d96413717279430d9fc8a7ecde976dec
     - name: SIM_URL
       value: http://localhost:5000
 bundled: false

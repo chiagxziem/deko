@@ -1,14 +1,21 @@
-# Deko Worker
+# Worker
 
-Worker for the Deko application.
+Background processor for queued ingestion jobs and asynchronous event handling.
 
-- Built with Bun, Redis and BullMQ.
-- Deployed with Docker.
+## Built With
 
-## Getting Started
+- Bun
+- BullMQ
+- Redis
+- Drizzle + PostgreSQL/TimescaleDB
 
-1. Copy `.env.example` to `.env` and configure environment variables.
-2. Run `bun install` to install dependencies.
-3. Run `turbo dev` from the project root to start the worker.
+## Quick Dev Setup
 
-See the main project [`README.md`](https://github.com/gozmanthefirst/deko) for more details.
+From repo root:
+
+```bash
+bun install
+cp .env.example .env
+docker compose up -d db redis
+bun run dev --filter=@repo/worker
+```

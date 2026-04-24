@@ -1,15 +1,24 @@
-# Deko API
+# API
 
-Backend API for the Deko application.
+Backend service for ingestion, querying, service management, and dashboard endpoints.
 
-- Built with Hono.
-- Uses PostgreSQL for data storage.
-- Deployed with Docker.
+## Built With
 
-## Getting Started
+- Hono
+- Zod
+- Drizzle
+- PostgreSQL/TimescaleDB
+- Redis
 
-1. Copy `.env.example` to `.env` and configure environment variables.
-2. Run `bun install` to install dependencies.
-3. Run `turbo dev` from the project root to start the API.
+## Quick Dev Setup
 
-See the main project [`README.md`](https://github.com/gozmanthefirst/deko) for more details.
+From repo root:
+
+```bash
+bun install
+cp .env.example .env
+docker compose up -d db redis
+bun run dev --filter=@repo/api
+```
+
+Default local URL: `http://localhost:8000`

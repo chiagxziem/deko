@@ -8,7 +8,7 @@ http:
   url: "{{SIM_URL}}/mode/:modeId"
   params:
     - name: modeId
-      value: steady
+      value: chaos
       type: path
   auth: inherit
 
