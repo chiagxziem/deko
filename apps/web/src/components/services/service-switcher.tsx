@@ -47,6 +47,7 @@ export function ServiceSwitcher() {
     services.data?.find((s) => s.id === serviceId) ?? services.data?.[0];
 
   const handleSwitch = async (service: z.infer<typeof ServiceSelectSchema>) => {
+    setOpenMobile(false);
     await setLastService({ data: service.id });
     await navigate({
       to: "/services/$serviceId/overview",

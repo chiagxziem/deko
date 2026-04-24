@@ -1,7 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+  useSearch,
+} from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo } from "react";
+import type { PaginationState } from "@tanstack/react-table";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { z } from "zod";
 
 import type { ErrorGroup } from "@repo/db/validators/dashboard.validator";
 
@@ -20,7 +27,12 @@ import { queryKeys } from "@/lib/query-keys";
 import { $getErrorGroups } from "@/server/dashboard";
 import { usePeriodStore } from "@/stores/period-store";
 
+const errorsSearchSchema = z.object({
+  page: z.coerce.number().int().min(1).catch(1),
+});
+
 export const Route = createFileRoute("/_app/services/$serviceId/errors")({
+  validateSearch: errorsSearchSchema,
   component: ErrorsPage,
 });
 
@@ -36,10 +48,43 @@ const ERROR_GROUP_LOADING_COLUMN_KEYS = errorGroupColumns.map((column) => {
 });
 
 function ErrorsPage() {
+  const searchParams = useSearch({ from: "/_app/services/$serviceId/errors" });
   const { serviceId } = useParams({
     from: "/_app/services/$serviceId/errors",
   });
+  const navigate = useNavigate();
   const period = usePeriodStore((s) => s.period);
+  const searchParamsRef = useRef(searchParams);
+
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
+  const pagination = useMemo<PaginationState>(
+    () => ({ pageIndex: searchParams.page - 1, pageSize: 10 }),
+    [searchParams.page],
+  );
+
+  const handlePaginationChange = useCallback(
+    (
+      updater: PaginationState | ((old: PaginationState) => PaginationState),
+    ) => {
+      const nextPagination =
+        typeof updater === "function" ? updater(pagination) : updater;
+
+      void navigate({
+        to: "/services/$serviceId/errors",
+        params: { serviceId },
+        search: {
+          ...searchParamsRef.current,
+          page: nextPagination.pageIndex + 1,
+        },
+        replace: true,
+        resetScroll: false,
+      });
+    },
+    [navigate, pagination, serviceId],
+  );
 
   const getErrorGroups = useServerFn($getErrorGroups);
 
@@ -76,7 +121,7 @@ function ErrorsPage() {
 
       {!errorGroupsQuery.isPending &&
       errorGroupsQuery.data?.groups.length === 0 ? (
-        <Empty>
+        <Empty className="p-6 pt-40">
           <EmptyHeader>
             <EmptyTitle>No errors</EmptyTitle>
             <EmptyDescription>
@@ -89,6 +134,8 @@ function ErrorsPage() {
           columns={errorGroupColumns}
           data={errorGroupsQuery.data?.groups ?? EMPTY_ERROR_GROUPS}
           emptyMessage="No error groups found for the selected period."
+          pagination={pagination}
+          onPaginationChange={handlePaginationChange}
           tableBodyAppend={tableBodyAppend}
         />
       )}

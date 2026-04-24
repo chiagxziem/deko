@@ -98,7 +98,7 @@ export function StatusBreakdownChart({ data }: StatusBreakdownChartProps) {
             margin={
               isMobile
                 ? { left: 0, right: 0, top: 20, bottom: 0 }
-                : { left: 0, right: 20, top: 0, bottom: 0 }
+                : { left: 0, right: 40, top: 0, bottom: 0 }
             }
           >
             {!isMobile ? (
@@ -114,7 +114,14 @@ export function StatusBreakdownChart({ data }: StatusBreakdownChartProps) {
                 />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      formatter={(value, _name, item) =>
+                        renderBreakdownTooltipRow(value, item)
+                      }
+                    />
+                  }
                 />
                 <Bar dataKey="value" fill="var(--color-foreground)" radius={4}>
                   <LabelList
@@ -137,7 +144,14 @@ export function StatusBreakdownChart({ data }: StatusBreakdownChartProps) {
                 <YAxis hide />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      formatter={(value, _name, item) =>
+                        renderBreakdownTooltipRow(value, item)
+                      }
+                    />
+                  }
                 />
                 <Bar dataKey="value" fill="var(--color-foreground)" radius={4}>
                   <LabelList
@@ -234,7 +248,7 @@ export function LogLevelBreakdownChart({ data }: LogLevelBreakdownChartProps) {
             margin={
               isMobile
                 ? { left: 0, right: 0, top: 20, bottom: 0 }
-                : { left: 0, right: 20, top: 0, bottom: 0 }
+                : { left: 0, right: 40, top: 0, bottom: 0 }
             }
           >
             {!isMobile ? (
@@ -251,7 +265,14 @@ export function LogLevelBreakdownChart({ data }: LogLevelBreakdownChartProps) {
                 />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      formatter={(value, _name, item) =>
+                        renderBreakdownTooltipRow(value, item)
+                      }
+                    />
+                  }
                 />
                 <Bar dataKey="value" fill="var(--color-foreground)" radius={4}>
                   <LabelList
@@ -275,7 +296,14 @@ export function LogLevelBreakdownChart({ data }: LogLevelBreakdownChartProps) {
                 <YAxis hide />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      formatter={(value, _name, item) =>
+                        renderBreakdownTooltipRow(value, item)
+                      }
+                    />
+                  }
                 />
                 <Bar dataKey="value" fill="var(--color-foreground)" radius={4}>
                   <LabelList
@@ -304,5 +332,37 @@ export function LogLevelBreakdownChartSkeleton() {
         <Skeleton className="h-64 w-full" />
       </CardContent>
     </Card>
+  );
+}
+
+function formatBreakdownTooltipName(name: unknown): string {
+  return typeof name === "string" && name.length > 0 ? name : "Unknown";
+}
+
+function formatBreakdownTooltipValue(value: unknown): string {
+  return typeof value === "number" ? value.toLocaleString() : String(value);
+}
+
+function renderBreakdownTooltipRow(
+  value: unknown,
+  item: { payload?: { name?: unknown; fill?: string }; color?: string },
+) {
+  const chipColor = item.payload?.fill ?? item.color ?? "hsl(var(--muted))";
+
+  return (
+    <div className="flex min-w-0 flex-1 items-center justify-between gap-4">
+      <span className="flex min-w-0 items-center gap-2">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-xs"
+          style={{ backgroundColor: chipColor }}
+        />
+        <span className="truncate text-muted-foreground">
+          {formatBreakdownTooltipName(item.payload?.name)}
+        </span>
+      </span>
+      <span className="shrink-0 pl-2 text-right font-mono font-medium text-foreground tabular-nums">
+        {formatBreakdownTooltipValue(value)}
+      </span>
+    </div>
   );
 }

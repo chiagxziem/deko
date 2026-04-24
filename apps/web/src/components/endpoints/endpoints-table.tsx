@@ -277,7 +277,7 @@ export function TopEndpointsPreview({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "shrink-0 font-mono text-[10px]",
+                    "shrink-0 font-mono text-[10px] font-semibold",
                     METHOD_STYLES[ep.method] ?? "",
                   )}
                 >

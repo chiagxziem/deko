@@ -41,7 +41,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="dark" lang="en" suppressHydrationWarning>
+    <html className="light" lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -51,8 +51,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
             {children}
             <DialogHost />
-            <Toaster richColors position="top-right" />
           </div>
+          <Toaster richColors position="top-right" />
         </TooltipProvider>
         <Scripts />
       </body>

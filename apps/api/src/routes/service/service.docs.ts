@@ -149,6 +149,14 @@ export const deleteServiceDoc = describeRoute({
         details: "Service not found",
       },
     ),
+    [HttpStatusCodes.CONFLICT]: createGenericErrorResponse(
+      "Service has attached tokens",
+      {
+        code: "SERVICE_HAS_TOKENS",
+        details:
+          "Cannot delete service with attached tokens. Delete all tokens first.",
+      },
+    ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },

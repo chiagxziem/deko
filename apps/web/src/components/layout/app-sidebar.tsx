@@ -21,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const navItems = [
@@ -52,6 +53,8 @@ export function AppSidebar() {
     select: (s) => s.location.pathname,
   });
 
+  const { setOpenMobile } = useSidebar();
+
   const isActive = (page: string) => pathname.split("/").at(-1) === page;
 
   return (
@@ -69,6 +72,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     render={<Link to={item.to} params={{ serviceId }} />}
                     tooltip={item.title}
+                    onClick={() => setOpenMobile(false)}
                     isActive={isActive(item.to.split("/").at(-1) ?? "")}
                   >
                     <HugeiconsIcon icon={item.icon} size={16} />

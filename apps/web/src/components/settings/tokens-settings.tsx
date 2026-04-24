@@ -51,6 +51,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
   Field,
   FieldError,
   FieldGroup,
@@ -167,6 +173,8 @@ export function TokensSettings() {
     return <TokensSettingsError refetch={refetch} />;
   }
 
+  const tokens = service?.tokens ?? ([] as const);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
@@ -186,16 +194,27 @@ export function TokensSettings() {
         </Button>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={service?.tokens ?? ([] as const)}
-        emptyMessage="No tokens yet."
-        tableBodyAppend={
-          isPending ? (
-            <TokenLoadingRows columnKeys={TOKEN_LOADING_COLUMN_KEYS} />
-          ) : undefined
-        }
-      />
+      {!isPending && tokens.length === 0 ? (
+        <Empty className="p-6 pt-20">
+          <EmptyHeader>
+            <EmptyTitle>No tokens</EmptyTitle>
+            <EmptyDescription>
+              No tokens have been created for this service yet.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={tokens}
+          emptyMessage="No tokens yet."
+          tableBodyAppend={
+            isPending ? (
+              <TokenLoadingRows columnKeys={TOKEN_LOADING_COLUMN_KEYS} />
+            ) : undefined
+          }
+        />
+      )}
     </div>
   );
 }

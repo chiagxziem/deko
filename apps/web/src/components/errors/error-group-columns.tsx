@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 
 import type { ErrorGroup } from "@repo/db/validators/dashboard.validator";
 
@@ -20,6 +20,13 @@ function statusColor(status: number): string {
   if (status >= 400) return "text-amber-600 dark:text-amber-400";
   return "text-muted-foreground";
 }
+
+const formatRelativeTime = (value: Date) => {
+  return formatDistanceToNowStrict(value, {
+    addSuffix: true,
+    roundingMethod: "floor",
+  });
+};
 
 export const errorGroupColumns: ColumnDef<ErrorGroup>[] = [
   {
@@ -79,7 +86,7 @@ export const errorGroupColumns: ColumnDef<ErrorGroup>[] = [
     },
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
-        {formatDistanceToNow(row.original.firstSeen, { addSuffix: true })}
+        {formatRelativeTime(row.original.firstSeen)}
       </span>
     ),
   },
@@ -93,7 +100,7 @@ export const errorGroupColumns: ColumnDef<ErrorGroup>[] = [
     },
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
-        {formatDistanceToNow(row.original.lastSeen, { addSuffix: true })}
+        {formatRelativeTime(row.original.lastSeen)}
       </span>
     ),
   },

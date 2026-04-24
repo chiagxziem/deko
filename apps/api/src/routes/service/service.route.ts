@@ -210,7 +210,39 @@ export const createServiceRouter = ({
         );
       }
 
-      const deletedService = await serviceRepository.deleteService(serviceId);
+      if (service.tokens.length > 0) {
+        return c.json(
+          errorResponse(
+            "SERVICE_HAS_TOKENS",
+            "Cannot delete service with attached tokens. Delete all tokens first.",
+          ),
+          HttpStatusCodes.CONFLICT,
+        );
+      }
+
+      let deletedService;
+
+      try {
+        deletedService = await serviceRepository.deleteService(serviceId);
+      } catch (error) {
+        // Handle FK race: a token may be created after the pre-check but before delete.
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "23503"
+        ) {
+          return c.json(
+            errorResponse(
+              "SERVICE_HAS_TOKENS",
+              "Cannot delete service with attached tokens. Delete all tokens first.",
+            ),
+            HttpStatusCodes.CONFLICT,
+          );
+        }
+
+        throw error;
+      }
 
       if (!deletedService) {
         return c.json(

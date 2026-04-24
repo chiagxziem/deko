@@ -188,12 +188,13 @@ export class DashboardRepository implements IDashboardRepository {
       endTime = to ?? new Date();
     }
 
-    // For period-based requests (1h/24h/7d/30d), anchor both bounds to DB `now()`
-    // so all services share one authoritative time source.
-    // For custom `from`/`to` requests, keep using caller-provided Date bounds.
-    const timeRangeCondition = period
-      ? sql`timestamp >= now() - ${PERIOD_TO_DB_INTERVAL[period]}::interval AND timestamp <= now()`
-      : sql`timestamp >= ${startTime} AND timestamp <= ${endTime}`;
+    // For period-based requests (1h/24h/7d/30d), anchor both the filter window and
+    // the generated bucket series to the database clock so bucket edges line up with
+    // the aggregated data for every supported granularity.
+    const rangeStartExpression = period
+      ? sql`now() - ${PERIOD_TO_DB_INTERVAL[period]}::interval`
+      : sql`${startTime}::timestamp`;
+    const rangeEndExpression = period ? sql`now()` : sql`${endTime}::timestamp`;
 
     // Build optional dimension conditions derived from the filter parameters.
     // These are added to the raw SQL so the time_bucket aggregation only considers
@@ -211,24 +212,46 @@ export class DashboardRepository implements IDashboardRepository {
     }
     if (level) dimensionConditions.push(eq(logEvent.level, level));
 
-    // Use TimescaleDB's time_bucket for efficient aggregation.
-    // Dimension conditions are appended to the WHERE clause only when present,
-    // avoiding an unnecessary AND TRUE that could confuse query planners.
+    // Generate all buckets for the time range, then LEFT JOIN actual data.
+    // This ensures every bucket is present in the results, even if there are no logs,
+    // preventing gaps in the timeseries chart when the service stops running.
     const result = await db.execute(sql`
+      WITH bucket_series AS (
+        -- Generate all bucket boundaries using the same range source as the data filter.
+        SELECT generate_series(
+          time_bucket(${bucketInterval}::interval, ${rangeStartExpression}),
+          time_bucket(${bucketInterval}::interval, ${rangeEndExpression}),
+          ${bucketInterval}::interval
+        ) AS bucket
+      ),
+      aggregated AS (
+        -- Aggregate log events by bucket
+        SELECT
+          time_bucket(${bucketInterval}::interval, timestamp) AS bucket,
+          COUNT(*)::int AS requests,
+          COUNT(*) FILTER (WHERE status >= 400)::int AS errors,
+          AVG(duration)::real AS avg_duration,
+          PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY duration)::real AS p50_duration,
+          PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration)::real AS p95_duration,
+          PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration)::real AS p99_duration
+        FROM log_event
+        WHERE service_id = ${serviceId}
+          AND timestamp >= ${rangeStartExpression}
+          AND timestamp <= ${rangeEndExpression}
+          ${dimensionConditions.length > 0 ? sql`AND ${and(...dimensionConditions)}` : sql``}
+        GROUP BY bucket
+      )
       SELECT
-        time_bucket(${bucketInterval}::interval, timestamp) AS bucket,
-        COUNT(*)::int AS requests,
-        COUNT(*) FILTER (WHERE status >= 400)::int AS errors,
-        AVG(duration)::real AS avg_duration,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY duration)::real AS p50_duration,
-        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration)::real AS p95_duration,
-        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration)::real AS p99_duration
-      FROM log_event
-      WHERE service_id = ${serviceId}
-        AND ${timeRangeCondition}
-        ${dimensionConditions.length > 0 ? sql`AND ${and(...dimensionConditions)}` : sql``}
-      GROUP BY bucket
-      ORDER BY bucket ASC
+        b.bucket,
+        COALESCE(a.requests, 0)::int AS requests,
+        COALESCE(a.errors, 0)::int AS errors,
+        COALESCE(a.avg_duration, 0)::real AS avg_duration,
+        COALESCE(a.p50_duration, 0)::real AS p50_duration,
+        COALESCE(a.p95_duration, 0)::real AS p95_duration,
+        COALESCE(a.p99_duration, 0)::real AS p99_duration
+      FROM bucket_series b
+      LEFT JOIN aggregated a ON b.bucket = a.bucket
+      ORDER BY b.bucket ASC
     `);
 
     return {
@@ -501,8 +524,9 @@ export class DashboardRepository implements IDashboardRepository {
         status::int,
         message,
         COUNT(*)::int AS count,
-        MIN(timestamp) AS "firstSeen",
-        MAX(timestamp) AS "lastSeen",
+        -- Convert naive timestamps to explicit UTC instants for client-safe parsing.
+        MIN(timestamp AT TIME ZONE 'UTC') AS "firstSeen",
+        MAX(timestamp AT TIME ZONE 'UTC') AS "lastSeen",
       -- COUNT(*) OVER() counts the number of rows in the full result set AFTER
       -- GROUP BY but BEFORE LIMIT, so we get the total group count for free
       -- without a separate COUNT subquery.

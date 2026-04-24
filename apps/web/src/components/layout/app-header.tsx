@@ -1,6 +1,8 @@
 import { RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { PeriodSelector } from "@/components/layout/period-selector";
 import {
@@ -32,6 +34,16 @@ export function AppHeader() {
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
+  const queryClient = useQueryClient();
+
+  const [isCoolingDown, setIsCoolingDown] = useState(false);
+
+  const handleRefresh = () => {
+    if (isCoolingDown) return;
+    queryClient.refetchQueries();
+    setIsCoolingDown(true);
+    setTimeout(() => setIsCoolingDown(false), 10_000);
+  };
 
   // oxlint-disable-next-line unicorn/prefer-array-find
   const lastSegment = pathname.split("/").filter(Boolean).at(-1) ?? "";
@@ -75,11 +87,26 @@ export function AppHeader() {
         />
 
         <Tooltip>
-          <TooltipTrigger render={<Button variant="ghost" size="icon-sm" />}>
-            <HugeiconsIcon icon={RefreshIcon} size={14} />
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={isCoolingDown}
+                onClick={handleRefresh}
+              />
+            }
+          >
+            <HugeiconsIcon
+              icon={RefreshIcon}
+              strokeWidth={2}
+              className={isCoolingDown ? "animate-spin" : ""}
+            />
             <span className="sr-only">Refresh</span>
           </TooltipTrigger>
-          <TooltipContent>Refresh data</TooltipContent>
+          <TooltipContent>
+            {isCoolingDown ? "Refreshed" : "Refresh data"}
+          </TooltipContent>
         </Tooltip>
 
         <PeriodSelector />

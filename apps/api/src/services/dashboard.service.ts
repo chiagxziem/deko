@@ -159,8 +159,8 @@ export const getDefaultGranularity = (period: Period): Granularity => {
     case "1h":
       return "minute";
     case "24h":
-      return "hour";
     case "7d":
+      return "hour";
     case "30d":
       return "day";
   }
