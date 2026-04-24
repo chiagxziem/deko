@@ -5,7 +5,7 @@ FROM base AS prepare
 WORKDIR /app
 
 # Install turbo globally
-RUN bun add -g turbo@^2.6.3
+RUN bun add -g turbo@^2.8.21
 
 # Copy everything
 COPY . .
