@@ -183,6 +183,8 @@ export const DataTable = <TData, TValue>({
   tableBodyAppend,
 }: DataTableProps<TData, TValue>) => {
   const isServerSide = rowCount !== undefined;
+  const isPaginationControlled =
+    controlledPagination !== undefined && setControlledPagination !== undefined;
 
   const [sorting, setSorting] = useState<SortingState>(defaultSorting);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -190,8 +192,8 @@ export const DataTable = <TData, TValue>({
   const [internalPagination, setInternalPagination] =
     useState<PaginationState>(defaultPagination);
 
-  const pagination = isServerSide
-    ? (controlledPagination ?? defaultPagination)
+  const pagination = isPaginationControlled
+    ? controlledPagination
     : internalPagination;
 
   // For tracking active filters for all dropdown types
@@ -225,7 +227,7 @@ export const DataTable = <TData, TValue>({
     getPaginationRowModel: isServerSide ? undefined : getPaginationRowModel(),
     manualPagination: isServerSide,
     rowCount: isServerSide ? rowCount : undefined,
-    onPaginationChange: isServerSide
+    onPaginationChange: isPaginationControlled
       ? setControlledPagination
       : setInternalPagination,
     onGlobalFilterChange: (value) => {
@@ -320,11 +322,7 @@ export const DataTable = <TData, TValue>({
   );
 
   const { pages, showLeftEllipsis, showRightEllipsis } = usePagination({
-    currentPage:
-      (isServerSide
-        ? (controlledPagination ?? defaultPagination)
-        : internalPagination
-      ).pageIndex + 1,
+    currentPage: pagination.pageIndex + 1,
     totalPages: table.getPageCount(),
     paginationItemsToDisplay,
   });
