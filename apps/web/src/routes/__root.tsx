@@ -4,6 +4,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { ThemeProvider } from "better-themes";
 
 import { DialogHost } from "@/components/layout/dialog-host";
 import { Toaster } from "@/components/ui/sonner";
@@ -41,19 +42,26 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="light" lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
 
       <body className="font-sans">
-        <TooltipProvider>
-          <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
-            {children}
-            <DialogHost />
-          </div>
-          <Toaster richColors position="top-right" />
-        </TooltipProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          disableTransitionOnChange
+          enableSystem
+        >
+          <TooltipProvider>
+            <div className="relative isolate bg-background text-foreground antialiased selection:bg-muted-foreground selection:text-muted">
+              {children}
+              <DialogHost />
+            </div>
+            <Toaster richColors position="top-right" />
+          </TooltipProvider>
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
