@@ -81,7 +81,7 @@ services:
       api:
         condition: service_started
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-4000}:4000"
     environment:
       NODE_ENV: production
       API_URL: ${API_URL}
