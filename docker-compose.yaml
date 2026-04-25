@@ -6,7 +6,7 @@ services:
   db:
     image: timescale/timescaledb:2.24.0-pg18
     ports:
-      - "6543:5432"
+      - "5432:5432"
     restart: unless-stopped
     environment:
       POSTGRES_DB: deko
@@ -24,7 +24,7 @@ services:
   redis:
     image: redis:8-alpine
     ports:
-      - "7480:6379"
+      - "6379:6379"
     restart: unless-stopped
     volumes:
       - redis_data:/data
@@ -52,8 +52,8 @@ services:
       NODE_ENV: production
       API_URL: ${API_URL}
       WEB_URL: ${WEB_URL}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:6543/deko
-      REDIS_URL: redis://redis:7480
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/deko
+      REDIS_URL: redis://redis:6379
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
 
@@ -69,8 +69,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:6543/deko
-      REDIS_URL: redis://redis:7480
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/deko
+      REDIS_URL: redis://redis:6379
 
   web:
     build:
@@ -81,11 +81,11 @@ services:
       api:
         condition: service_started
     ports:
-      - "${WEB_PORT:-3001}:3001"
+      - "${WEB_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       API_URL: ${API_URL}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:6543/deko
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/deko
 
 volumes:
   pgdata:
