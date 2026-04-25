@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.13-slim AS base
+FROM oven/bun:1.3.13 AS base
 
 # --- PREPARE STAGE ---
 FROM base AS prepare
@@ -36,11 +36,11 @@ WORKDIR /app
 # Set environment variables
 ENV NODE_ENV=production \
     HOSTNAME="0.0.0.0" \
-    PORT=4000
+    PORT=3000
 
 COPY --from=builder /app/apps/web/.output ./
 
 USER bun
-EXPOSE 4000
+EXPOSE 3000
 
 ENTRYPOINT [ "bun", "server/index.mjs" ]

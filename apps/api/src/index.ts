@@ -4,8 +4,6 @@ import health from "@/routes/health/health.route";
 import ingest from "@/routes/ingest/ingest.route";
 import serviceRouter from "@/routes/service/service.route";
 
-import env from "./lib/env";
-
 const app = createApp();
 
 app.route("/api/health", health);
@@ -14,6 +12,6 @@ app.route("/api/services", serviceRouter);
 app.route("/api/dashboard", dashboard);
 
 export default {
-  port: env.PORT,
+  port: 8000,
   fetch: app.fetch,
 };
