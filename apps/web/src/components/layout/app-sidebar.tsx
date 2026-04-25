@@ -1,6 +1,7 @@
 import {
   AlertCircleIcon,
   BarChartIcon,
+  Github,
   Note01Icon,
   Plug01Icon,
   Settings01Icon,
@@ -102,6 +103,22 @@ export function AppSidebar() {
             >
               <HugeiconsIcon icon={Settings01Icon} size={16} />
               <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={
+                // oxlint-disable-next-line jsx_a11y/anchor-has-content
+                <a
+                  href="https://github.com/chiagxziem/deko"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              }
+              tooltip="GitHub"
+            >
+              <HugeiconsIcon icon={Github} size={16} />
+              <span>GitHub</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
