@@ -36,11 +36,11 @@ WORKDIR /app
 # Set environment variables
 ENV NODE_ENV=production \
     HOSTNAME="0.0.0.0" \
-    PORT=3000
+    PORT=4000
 
 COPY --from=builder /app/apps/web/.output ./
 
 USER bun
-EXPOSE 3000
+EXPOSE 4000
 
 ENTRYPOINT [ "bun", "server/index.mjs" ]
