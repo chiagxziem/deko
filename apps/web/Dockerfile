@@ -5,7 +5,8 @@ FROM base AS prepare
 WORKDIR /app
 
 # Install turbo globally
-RUN bun add -g turbo@^2.8.21
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun add -g turbo@2.9.6
 
 # Copy everything
 COPY . .
@@ -21,7 +22,8 @@ WORKDIR /app
 COPY --from=prepare /app/out/json/ .
 
 # Install dependencies
-RUN bun install
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
 
 # Copy the rest of the files (as they change more often)
 COPY --from=prepare /app/out/full/ .
