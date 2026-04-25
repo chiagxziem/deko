@@ -16,7 +16,7 @@ Deko is a self-hosted API observability platform. It ingests API events, stores 
 
 The root compose file starts these services:
 
-- db (TimescaleDB)
+- pg (TimescaleDB)
 - redis
 - api
 - worker
@@ -32,8 +32,8 @@ cp .env.example .env
 
 Set at minimum:
 
-- POSTGRES_USER
-- POSTGRES_PASSWORD
+- PG_USER
+- PG_PASSWORD
 - ENCRYPTION_KEY
 - API_URL
 - WEB_URL
@@ -41,14 +41,14 @@ Set at minimum:
 ### 2. Build and run
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.prod.yaml up -d --build
 ```
 
 ### 3. Verify
 
 ```bash
-docker compose ps
-docker compose logs -f api web worker
+docker compose -f docker-compose.prod.yaml ps
+docker compose -f docker-compose.prod.yaml logs -f api web worker
 ```
 
 ### 4. Access
@@ -60,13 +60,13 @@ docker compose logs -f api web worker
 ### 5. Stop
 
 ```bash
-docker compose down
+docker compose -f docker-compose.prod.yaml down
 ```
 
 Remove volumes as well:
 
 ```bash
-docker compose down -v
+docker compose -f docker-compose.prod.yaml down -v
 ```
 
 ## Development
