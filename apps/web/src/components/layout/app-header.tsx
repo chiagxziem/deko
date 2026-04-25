@@ -1,7 +1,8 @@
 import { RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { PeriodSelector } from "@/components/layout/period-selector";
@@ -20,6 +21,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  $getSingleService,
+  singleServiceQueryOptions,
+} from "@/server/services";
 
 const PAGE_SEGMENT_TITLES: Record<string, string> = {
   overview: "Overview",
@@ -30,6 +35,7 @@ const PAGE_SEGMENT_TITLES: Record<string, string> = {
 };
 
 export function AppHeader() {
+  const getSingleService = useServerFn($getSingleService);
   const { serviceId } = useParams({ from: "/_app/services/$serviceId" });
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -37,6 +43,11 @@ export function AppHeader() {
   const queryClient = useQueryClient();
 
   const [isCoolingDown, setIsCoolingDown] = useState(false);
+
+  const { data: service, isPending } = useQuery({
+    ...singleServiceQueryOptions(serviceId),
+    queryFn: () => getSingleService({ data: serviceId }),
+  });
 
   const handleRefresh = () => {
     if (isCoolingDown) return;
@@ -59,12 +70,14 @@ export function AppHeader() {
           aria-hidden="true"
           className="mr-2 ml-1 h-4 w-px shrink-0 self-center bg-border/70"
         />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:inline-flex">
-              <BreadcrumbLink href={homeHref}>Deko</BreadcrumbLink>
+        <Breadcrumb className="mr-12">
+          <BreadcrumbList className="max-w-[40svw] flex-nowrap">
+            <BreadcrumbItem>
+              <BreadcrumbLink href={homeHref} className="line-clamp-1">
+                {isPending ? "Loading..." : (service?.name ?? "Deko")}
+              </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
+            <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbPage>{title}</BreadcrumbPage>
             </BreadcrumbItem>

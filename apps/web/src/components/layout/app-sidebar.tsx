@@ -46,6 +46,11 @@ const navItems = [
     to: "/services/$serviceId/endpoints" as const,
     icon: Plug01Icon,
   },
+  {
+    title: "Settings",
+    to: "/services/$serviceId/settings" as const,
+    icon: Settings01Icon,
+  },
 ];
 
 export function AppSidebar() {
@@ -90,24 +95,6 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               render={
-                <Link
-                  to="/services/$serviceId/settings"
-                  params={{ serviceId }}
-                  search={{
-                    section: "general",
-                  }}
-                />
-              }
-              tooltip="Settings"
-              isActive={isActive("settings")}
-            >
-              <HugeiconsIcon icon={Settings01Icon} size={16} />
-              <span>Settings</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={
                 // oxlint-disable-next-line jsx_a11y/anchor-has-content
                 <a
                   href="https://github.com/chiagxziem/deko"
@@ -115,6 +102,7 @@ export function AppSidebar() {
                   rel="noopener noreferrer"
                 />
               }
+              onClick={() => setOpenMobile(false)}
               tooltip="GitHub"
             >
               <HugeiconsIcon icon={Github} size={16} />

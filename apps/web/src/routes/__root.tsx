@@ -59,7 +59,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               {children}
               <DialogHost />
             </div>
-            <Toaster richColors position="top-right" />
+            <Toaster richColors position="bottom-right" />
           </TooltipProvider>
         </ThemeProvider>
         <Scripts />

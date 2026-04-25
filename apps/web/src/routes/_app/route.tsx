@@ -24,9 +24,6 @@ export const Route = createFileRoute("/_app")({
     await $setLastService({ data: serviceId });
   },
   loader: async ({ context }) => {
-    // await Promise.all([
-    //   context.queryClient.prefetchQuery(servicesQueryOptions())
-    // ])
     await context.queryClient.prefetchQuery(servicesQueryOptions());
   },
   component: AppLayout,

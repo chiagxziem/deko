@@ -25,6 +25,7 @@ export function CreateServiceDialog() {
   const navigate = useNavigate();
   const createService = useServerFn($createService);
   const setLastService = useServerFn($setLastService);
+
   const queryClient = useQueryClient();
 
   const activeDialog = useDialogStore((s) => s.activeDialog);
@@ -46,6 +47,7 @@ export function CreateServiceDialog() {
       void navigate({
         to: "/services/$serviceId/overview",
         params: { serviceId: newService.id },
+        replace: true,
       });
     },
     onError: (err) => {
