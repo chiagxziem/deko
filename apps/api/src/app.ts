@@ -21,7 +21,10 @@ export const createApp = () => {
 
   // CORS
   const corsOrigins = env.CORS_ORIGINS
-    ? [env.WEB_URL, ...env.CORS_ORIGINS.split(",").map((origin) => origin.trim())]
+    ? [
+        env.WEB_URL,
+        ...env.CORS_ORIGINS.split(",").map((origin) => origin.trim()),
+      ]
     : env.WEB_URL;
 
   app.use(
