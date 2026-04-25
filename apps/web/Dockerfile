@@ -1,12 +1,11 @@
-FROM oven/bun:1.3.11-alpine AS base
+FROM oven/bun:1.3.13-slim AS base
 
 # --- PREPARE STAGE ---
 FROM base AS prepare
 WORKDIR /app
 
 # Install turbo globally
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun add -g turbo@2.9.6
+RUN bun add -g turbo@2.9.6
 
 # Copy everything
 COPY . .
@@ -22,8 +21,7 @@ WORKDIR /app
 COPY --from=prepare /app/out/json/ .
 
 # Install dependencies
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy the rest of the files (as they change more often)
 COPY --from=prepare /app/out/full/ .
