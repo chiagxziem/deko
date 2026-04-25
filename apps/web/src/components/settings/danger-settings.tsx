@@ -133,9 +133,13 @@ export function DeleteServiceDialogHost() {
     await deleteServiceMutation.mutateAsync({ data: serviceId });
   }
 
+  function handleCloseDialog() {
+    closeDialog();
+    setConfirmValue("");
+  }
+
   function handleOpenChange(next: boolean) {
-    if (!next) closeDialog();
-    if (!next) setConfirmValue("");
+    if (!next) handleCloseDialog();
   }
 
   return (
@@ -175,7 +179,7 @@ export function DeleteServiceDialogHost() {
             size="sm"
             variant="outline"
             disabled={deleteServiceMutation.isPending}
-            onClick={() => closeDialog()}
+            onClick={() => handleCloseDialog()}
           >
             Cancel
           </Button>
