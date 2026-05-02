@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  TOKEN_GUIDE_PENDING_KEY,
+  TOKEN_GUIDE_SEEN_KEY,
+} from "@/lib/onboarding";
 import { queryKeys } from "@/lib/query-keys";
 import { handleError } from "@/lib/utils";
 import { $createService, $setLastService } from "@/server/services";
@@ -36,6 +40,18 @@ export function CreateServiceDialog() {
   const createServiceMutation = useMutation({
     mutationFn: createService,
     onSuccess: async (newService) => {
+      const existingServices =
+        queryClient.getQueryData<Array<{ id: string }>>(queryKeys.services()) ??
+        [];
+      const isFirstService = existingServices.length === 0;
+
+      if (isFirstService) {
+        const alreadySeen = localStorage.getItem(TOKEN_GUIDE_SEEN_KEY) === "1";
+        if (!alreadySeen) {
+          sessionStorage.setItem(TOKEN_GUIDE_PENDING_KEY, "1");
+        }
+      }
+
       await setLastService({ data: newService.id });
       await queryClient.invalidateQueries({ queryKey: queryKeys.services() });
       queryClient.setQueryData(queryKeys.service(newService.id), newService);

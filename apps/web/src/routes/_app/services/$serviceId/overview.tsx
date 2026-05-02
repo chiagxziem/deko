@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 
 import type { TopEndpoint } from "@repo/db/validators/dashboard.validator";
 
@@ -16,6 +21,16 @@ import {
   TimeseriesChart,
   TimeseriesChartSkeleton,
 } from "@/components/overview/timeseries-chart";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import {
   Empty,
@@ -23,6 +38,10 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import {
+  TOKEN_GUIDE_PENDING_KEY,
+  TOKEN_GUIDE_SEEN_KEY,
+} from "@/lib/onboarding";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +51,7 @@ import {
   $getTimeseriesStats,
   $getTopEndpoints,
 } from "@/server/dashboard";
+import { useDialogStore } from "@/stores/dialog-store";
 import { usePeriodStore } from "@/stores/period-store";
 
 export const Route = createFileRoute("/_app/services/$serviceId/overview")({
@@ -46,16 +66,45 @@ function fmtDuration(ms: number) {
 }
 
 function OverviewPage() {
+  const navigate = useNavigate();
   const { serviceId } = useParams({
     from: "/_app/services/$serviceId/overview",
   });
-  const period = usePeriodStore((s) => s.period);
 
   const getOverviewStats = useServerFn($getOverviewStats);
   const getTimeseriesStats = useServerFn($getTimeseriesStats);
   const getStatusBreakdown = useServerFn($getStatusBreakdown);
   const getLogLevelBreakdown = useServerFn($getLogLevelBreakdown);
   const getTopEndpoints = useServerFn($getTopEndpoints);
+
+  const period = usePeriodStore((s) => s.period);
+  const openDialog = useDialogStore((s) => s.openDialog);
+  const [showTokenGuide, setShowTokenGuide] = useState(false);
+
+  useEffect(() => {
+    const shouldShow = sessionStorage.getItem(TOKEN_GUIDE_PENDING_KEY) === "1";
+    const alreadySeen = localStorage.getItem(TOKEN_GUIDE_SEEN_KEY) === "1";
+
+    if (shouldShow && !alreadySeen) {
+      sessionStorage.removeItem(TOKEN_GUIDE_PENDING_KEY);
+      setShowTokenGuide(true);
+    }
+  }, []);
+
+  const closeTokenGuide = () => {
+    localStorage.setItem(TOKEN_GUIDE_SEEN_KEY, "1");
+    setShowTokenGuide(false);
+  };
+
+  const goToTokenSetup = async () => {
+    closeTokenGuide();
+    await navigate({
+      to: "/services/$serviceId/settings",
+      params: { serviceId },
+      search: { section: "tokens" },
+    });
+    openDialog({ type: "create-token", serviceId });
+  };
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.overviewStats(serviceId, { period }),
@@ -94,169 +143,195 @@ function OverviewPage() {
   const topEndpoints = topEndpointsQuery.data?.endpoints ?? EMPTY_TOP_ENDPOINTS;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-lg font-semibold">Overview</h1>
-        <p className="text-sm text-muted-foreground">
-          Service health and performance at a glance.
-        </p>
-      </div>
+    <>
+      <AlertDialog
+        open={showTokenGuide}
+        onOpenChange={(open) => !open && closeTokenGuide()}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create your first ingest token</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your service is ready. Next, create a token in Settings and use it
+              in your app to send logs to Deko via the
+              <strong> x-deko-service-token </strong>
+              header.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Later</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void goToTokenSetup()}>
+              Go to Settings
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* KPI stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {overviewQuery.isPending ? (
-          <>
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-          </>
-        ) : overviewQuery.isError ? (
-          <>
-            <ErrorCard
-              title="Total Requests"
-              description="Could not load this metric."
-            />
-            <ErrorCard
-              title="Error Rate"
-              description="Could not load this metric."
-            />
-            <ErrorCard
-              title="Avg Duration"
-              description="Could not load this metric."
-            />
-            <ErrorCard
-              title="P95 Duration"
-              description="Could not load this metric."
-            />
-            <ErrorCard
-              title="P99 Duration"
-              description="Could not load this metric."
-            />
-          </>
-        ) : !stats ? (
-          <EmptyCard
-            title="Overview Metrics"
-            description="No metrics available for the selected period."
-            className="sm:col-span-2 lg:col-span-5"
-          />
-        ) : (
-          <>
-            <StatCard
-              title="Total Requests"
-              value={stats.totalRequests.toLocaleString()}
-              change={stats.comparison.totalRequestsChange}
-              positiveIsGood={true}
-            />
-            <StatCard
-              title="Error Rate"
-              value={`${stats.errorRate.toFixed(2)}%`}
-              change={stats.comparison.errorRateChange}
-              positiveIsGood={false}
-            />
-            <StatCard
-              title="Avg Duration"
-              value={fmtDuration(stats.avgDuration)}
-              change={stats.comparison.avgDurationChange}
-              positiveIsGood={false}
-              suffix="avg"
-            />
-            <StatCard
-              title="P95 Duration"
-              value={fmtDuration(stats.p95Duration)}
-              positiveIsGood={false}
-            />
-            <StatCard
-              title="P99 Duration"
-              value={fmtDuration(stats.p99Duration)}
-              positiveIsGood={false}
-            />
-          </>
-        )}
-      </div>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-lg font-semibold">Overview</h1>
+          <p className="text-sm text-muted-foreground">
+            Service health and performance at a glance.
+          </p>
+        </div>
 
-      {/* Timeseries chart */}
-      {timeseriesQuery.isPending ? (
-        <TimeseriesChartSkeleton />
-      ) : timeseriesQuery.isError ? (
-        <ErrorCard
-          title="Requests & Errors"
-          description={"Could not load timeseries data."}
-          className="py-16"
-          centered
-        />
-      ) : !timeseriesQuery.data || timeseriesQuery.data.buckets.length === 0 ? (
-        <EmptyCard
-          title="Requests & Errors"
-          description="No timeseries data available for the selected period."
-          className="py-16"
-        />
-      ) : (
-        <TimeseriesChart data={timeseriesQuery.data} />
-      )}
+        {/* KPI stat cards */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {overviewQuery.isPending ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : overviewQuery.isError ? (
+            <>
+              <ErrorCard
+                title="Total Requests"
+                description="Could not load this metric."
+              />
+              <ErrorCard
+                title="Error Rate"
+                description="Could not load this metric."
+              />
+              <ErrorCard
+                title="Avg Duration"
+                description="Could not load this metric."
+              />
+              <ErrorCard
+                title="P95 Duration"
+                description="Could not load this metric."
+              />
+              <ErrorCard
+                title="P99 Duration"
+                description="Could not load this metric."
+              />
+            </>
+          ) : !stats ? (
+            <EmptyCard
+              title="Overview Metrics"
+              description="No metrics available for the selected period."
+              className="sm:col-span-2 lg:col-span-5"
+            />
+          ) : (
+            <>
+              <StatCard
+                title="Total Requests"
+                value={stats.totalRequests.toLocaleString()}
+                change={stats.comparison.totalRequestsChange}
+                positiveIsGood={true}
+              />
+              <StatCard
+                title="Error Rate"
+                value={`${stats.errorRate.toFixed(2)}%`}
+                change={stats.comparison.errorRateChange}
+                positiveIsGood={false}
+              />
+              <StatCard
+                title="Avg Duration"
+                value={fmtDuration(stats.avgDuration)}
+                change={stats.comparison.avgDurationChange}
+                positiveIsGood={false}
+                suffix="avg"
+              />
+              <StatCard
+                title="P95 Duration"
+                value={fmtDuration(stats.p95Duration)}
+                positiveIsGood={false}
+              />
+              <StatCard
+                title="P99 Duration"
+                value={fmtDuration(stats.p99Duration)}
+                positiveIsGood={false}
+              />
+            </>
+          )}
+        </div>
 
-      {/* Breakdown charts */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {statusQuery.isPending ? (
-          <StatusBreakdownChartSkeleton />
-        ) : statusQuery.isError ? (
+        {/* Timeseries chart */}
+        {timeseriesQuery.isPending ? (
+          <TimeseriesChartSkeleton />
+        ) : timeseriesQuery.isError ? (
           <ErrorCard
-            title="Status Codes"
-            description={"Could not load status breakdown."}
+            title="Requests & Errors"
+            description={"Could not load timeseries data."}
             className="py-16"
             centered
           />
-        ) : !statusQuery.data || statusQuery.data.breakdown.length === 0 ? (
+        ) : !timeseriesQuery.data ||
+          timeseriesQuery.data.buckets.length === 0 ? (
           <EmptyCard
-            title="Status Codes"
-            description="No status breakdown available for the selected period."
+            title="Requests & Errors"
+            description="No timeseries data available for the selected period."
             className="py-16"
           />
         ) : (
-          <StatusBreakdownChart data={statusQuery.data} />
+          <TimeseriesChart data={timeseriesQuery.data} />
         )}
 
-        {levelQuery.isPending ? (
-          <LogLevelBreakdownChartSkeleton />
-        ) : levelQuery.isError ? (
+        {/* Breakdown charts */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {statusQuery.isPending ? (
+            <StatusBreakdownChartSkeleton />
+          ) : statusQuery.isError ? (
+            <ErrorCard
+              title="Status Codes"
+              description={"Could not load status breakdown."}
+              className="py-16"
+              centered
+            />
+          ) : !statusQuery.data || statusQuery.data.breakdown.length === 0 ? (
+            <EmptyCard
+              title="Status Codes"
+              description="No status breakdown available for the selected period."
+              className="py-16"
+            />
+          ) : (
+            <StatusBreakdownChart data={statusQuery.data} />
+          )}
+
+          {levelQuery.isPending ? (
+            <LogLevelBreakdownChartSkeleton />
+          ) : levelQuery.isError ? (
+            <ErrorCard
+              title="Log Levels"
+              description={"Could not load log-level breakdown."}
+              className="py-16"
+              centered
+            />
+          ) : !levelQuery.data || levelQuery.data.breakdown.length === 0 ? (
+            <EmptyCard
+              title="Log Levels"
+              description="No log-level breakdown available for the selected period."
+              className="py-16"
+            />
+          ) : (
+            <LogLevelBreakdownChart data={levelQuery.data} />
+          )}
+        </div>
+
+        {/* Top endpoints preview */}
+        {topEndpointsQuery.isPending ? (
+          <TopEndpointsPreview endpoints={EMPTY_TOP_ENDPOINTS} isLoading />
+        ) : topEndpointsQuery.isError ? (
           <ErrorCard
-            title="Log Levels"
-            description={"Could not load log-level breakdown."}
+            title="Top Endpoints"
+            description={"Could not load top endpoints."}
             className="py-16"
             centered
           />
-        ) : !levelQuery.data || levelQuery.data.breakdown.length === 0 ? (
+        ) : topEndpoints.length === 0 ? (
           <EmptyCard
-            title="Log Levels"
-            description="No log-level breakdown available for the selected period."
+            title="Top Endpoints"
+            description="No endpoint data available for the selected period."
             className="py-16"
           />
         ) : (
-          <LogLevelBreakdownChart data={levelQuery.data} />
+          <TopEndpointsPreview endpoints={topEndpoints} isLoading={false} />
         )}
       </div>
-
-      {/* Top endpoints preview */}
-      {topEndpointsQuery.isPending ? (
-        <TopEndpointsPreview endpoints={EMPTY_TOP_ENDPOINTS} isLoading />
-      ) : topEndpointsQuery.isError ? (
-        <ErrorCard
-          title="Top Endpoints"
-          description={"Could not load top endpoints."}
-          className="py-16"
-          centered
-        />
-      ) : topEndpoints.length === 0 ? (
-        <EmptyCard
-          title="Top Endpoints"
-          description="No endpoint data available for the selected period."
-          className="py-16"
-        />
-      ) : (
-        <TopEndpointsPreview endpoints={topEndpoints} isLoading={false} />
-      )}
-    </div>
+    </>
   );
 }
 
