@@ -3,6 +3,8 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { useNavigationOverlay } from "@/hooks/use-navigation-overlay";
+import { cn } from "@/lib/utils";
 import {
   $resolveDefaultServiceId,
   $setLastService,
@@ -30,12 +32,26 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppLayout() {
+  const { isNavigating } = useNavigationOverlay();
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        {isNavigating && (
+          <div className="absolute inset-0 isolate z-20 flex bg-black/60 duration-100 supports-backdrop-filter:backdrop-blur-xs">
+            <div className="flex h-svh w-full items-center justify-center">
+              <div className="h-7 w-7 animate-spin rounded-full border-4 border-transparent border-t-foreground/60" />
+            </div>
+          </div>
+        )}
         <AppHeader />
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div
+          className={cn(
+            "relative flex-1 p-4 md:p-6",
+            isNavigating ? "overflow-hidden" : "overflow-auto",
+          )}
+        >
           <Outlet />
         </div>
       </SidebarInset>
