@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { PeriodSelector } from "@/components/layout/period-selector";
 import {
@@ -25,6 +25,7 @@ import {
   $getSingleService,
   singleServiceQueryOptions,
 } from "@/server/services";
+import { useNavigationStore } from "@/stores/navigation-store";
 
 const PAGE_SEGMENT_TITLES: Record<string, string> = {
   overview: "Overview",
@@ -43,6 +44,15 @@ export function AppHeader() {
   const queryClient = useQueryClient();
 
   const [isCoolingDown, setIsCoolingDown] = useState(false);
+  const isNavigating = useNavigationStore((s) => s.isNavigating);
+  const hasError = useSyncExternalStore(
+    (cb) => queryClient.getQueryCache().subscribe(cb),
+    () =>
+      queryClient
+        .getQueryCache()
+        .getAll()
+        .some((q) => q.state.status === "error"),
+  );
 
   const { data: service, isPending } = useQuery({
     ...singleServiceQueryOptions(serviceId),
@@ -88,10 +98,23 @@ export function AppHeader() {
       <div className="flex items-center gap-1.5">
         <div className="mr-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            {isNavigating ? (
+              <span className="relative inline-flex size-2 rounded-full bg-muted-foreground/40" />
+            ) : hasError ? (
+              <>
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75 animation-duration-[1500ms]" />
+                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+              </>
+            ) : (
+              <>
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+              </>
+            )}
           </span>
-          <span className="hidden sm:inline">Live</span>
+          <span className="hidden sm:inline">
+            {isNavigating ? "Loading" : hasError ? "Error" : "Live"}
+          </span>
         </div>
 
         <span
