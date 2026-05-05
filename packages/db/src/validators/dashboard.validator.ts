@@ -29,6 +29,7 @@ export const ServiceOverviewStatsSchema = z.object({
   p95Duration: z.number(),
   p99Duration: z.number(),
   period: z.object({
+    // Use strict ISO parsing for API contract fields so OpenAPI/Scalar stays accurate.
     from: z.iso.datetime().transform((n) => new Date(n)),
     to: z.iso.datetime().transform((n) => new Date(n)),
   }),
@@ -53,6 +54,8 @@ export const ServiceTimeseriesStatsSchema = z.object({
   granularity: GranularityEnumSchema,
   buckets: z.array(
     z.object({
+      // Buckets come from raw DB aggregations and can arrive as Date or datetime-like strings.
+      // Coercion keeps parsing resilient across drivers/runtime serialization paths.
       timestamp: z.coerce.date(),
       requests: z.number().optional(),
       errors: z.number().optional(),
@@ -65,6 +68,7 @@ export const ServiceTimeseriesStatsSchema = z.object({
 });
 
 const LogEventResponseSchema = createSelectSchema(logEvent).extend({
+  // Log rows are documented API response fields; keep strict ISO validation for docs and clients.
   timestamp: z.iso.datetime().transform((n) => new Date(n)),
   receivedAt: z.iso.datetime().transform((n) => new Date(n)),
 });
@@ -157,6 +161,7 @@ export const ErrorGroupSchema = z.object({
   status: z.number(),
   message: z.string().nullable(),
   count: z.number(),
+  // firstSeen/lastSeen are DB aggregate outputs (MIN/MAX), so coerce for compatibility.
   firstSeen: z.coerce.date(),
   lastSeen: z.coerce.date(),
 });
@@ -173,6 +178,7 @@ export const LogsQuerySchema = z.object({
   environment: z.string().optional(),
   method: MethodEnumSchema.optional(),
   path: z.string().optional(),
+  // Query params are user input; enforce ISO 8601 here to avoid ambiguous date parsing.
   to: z.iso
     .datetime()
     .transform((n) => new Date(n))
