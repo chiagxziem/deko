@@ -17,8 +17,9 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreload: "viewport",
-    defaultPreloadStaleTime: 0,
+    defaultPreload: "render",
+    defaultPreloadDelay: 0,
+    defaultPreloadStaleTime: 30_000,
     notFoundMode: "root",
   });
   setupRouterSsrQueryIntegration({

@@ -19,9 +19,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCopyToClipboard } from "@/hooks/use-copy";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { queryKeys } from "@/lib/query-keys";
 import { cn, truncateMiddle } from "@/lib/utils";
-import { $getSingleLog } from "@/server/dashboard";
+import { $getSingleLog, singleLogQueryOptions } from "@/server/dashboard";
 
 interface LogDetailPanelProps {
   serviceId: string;
@@ -72,7 +71,7 @@ export function LogDetailPanel({
   const isMobile = useIsMobile();
 
   const logQuery = useQuery({
-    queryKey: queryKeys.singleLog(serviceId, logId),
+    ...singleLogQueryOptions(serviceId, logId, timestamp),
     queryFn: () => getSingleLog({ data: { serviceId, logId, timestamp } }),
     enabled: open && !!logId && !initialLog,
   });

@@ -20,8 +20,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryKeys } from "@/lib/query-keys";
-import { $getTopEndpoints } from "@/server/dashboard";
+import { resolvePeriodForLoader } from "@/lib/utils";
+import { $getTopEndpoints, topEndpointsQueryOptions } from "@/server/dashboard";
 import { usePeriodStore } from "@/stores/period-store";
 
 const endpointsSearchSchema = z.object({
@@ -42,6 +42,19 @@ const EMPTY_ENDPOINTS: never[] = [];
 
 export const Route = createFileRoute("/_app/services/$serviceId/endpoints")({
   validateSearch: endpointsSearchSchema,
+  loaderDeps: ({ search }) => ({ sortBy: search.sortBy }),
+  loader: async ({ context, params, deps }) => {
+    const { serviceId } = params;
+    const period = resolvePeriodForLoader();
+
+    await context.queryClient.ensureQueryData(
+      topEndpointsQueryOptions(serviceId, {
+        period,
+        sortBy: deps.sortBy,
+        limit: 50,
+      }),
+    );
+  },
   component: EndpointsPage,
 });
 
@@ -79,7 +92,7 @@ function EndpointsPage() {
   const sortBy = searchParams.sortBy;
 
   const endpointsQuery = useQuery({
-    queryKey: queryKeys.topEndpoints(serviceId, { period, sortBy, limit: 50 }),
+    ...topEndpointsQueryOptions(serviceId, { period, sortBy, limit: 50 }),
     queryFn: () =>
       getTopEndpoints({ data: { serviceId, period, sortBy, limit: 50 } }),
   });

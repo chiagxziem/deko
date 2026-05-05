@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { queryKeys } from "@/lib/query-keys";
-import { $getErrorGroups } from "@/server/dashboard";
+import { resolvePeriodForLoader } from "@/lib/utils";
+import { $getErrorGroups, errorGroupsQueryOptions } from "@/server/dashboard";
 import { usePeriodStore } from "@/stores/period-store";
 
 const errorsSearchSchema = z.object({
@@ -33,6 +33,14 @@ const errorsSearchSchema = z.object({
 
 export const Route = createFileRoute("/_app/services/$serviceId/errors")({
   validateSearch: errorsSearchSchema,
+  loader: async ({ context, params }) => {
+    const { serviceId } = params;
+    const period = resolvePeriodForLoader();
+
+    await context.queryClient.ensureQueryData(
+      errorGroupsQueryOptions(serviceId, { period, limit: 100 }),
+    );
+  },
   component: ErrorsPage,
 });
 
@@ -53,6 +61,9 @@ function ErrorsPage() {
     from: "/_app/services/$serviceId/errors",
   });
   const navigate = useNavigate();
+
+  const getErrorGroups = useServerFn($getErrorGroups);
+
   const period = usePeriodStore((s) => s.period);
   const searchParamsRef = useRef(searchParams);
 
@@ -86,10 +97,8 @@ function ErrorsPage() {
     [navigate, pagination, serviceId],
   );
 
-  const getErrorGroups = useServerFn($getErrorGroups);
-
   const errorGroupsQuery = useQuery({
-    queryKey: queryKeys.errorGroups(serviceId, { period }),
+    ...errorGroupsQueryOptions(serviceId, { period, limit: 100 }),
     queryFn: () => getErrorGroups({ data: { serviceId, period, limit: 100 } }),
   });
 

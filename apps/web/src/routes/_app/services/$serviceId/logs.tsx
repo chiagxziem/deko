@@ -5,6 +5,7 @@ import {
   useParams,
   useSearch,
 } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -54,15 +55,6 @@ const logsSearchSchema = z.object({
   timestamp: z.string().optional().catch(undefined),
 });
 
-type LogsPageResult = {
-  logs: LogEntry[];
-  pagination: {
-    hasNext: boolean;
-    nextCursor: string | null;
-    totalEstimate: number | null;
-  };
-};
-
 export const Route = createFileRoute("/_app/services/$serviceId/logs")({
   validateSearch: logsSearchSchema,
   component: LogsPage,
@@ -72,6 +64,9 @@ function LogsPage() {
   const searchParams = useSearch({ from: "/_app/services/$serviceId/logs" });
   const { serviceId } = useParams({ from: "/_app/services/$serviceId/logs" });
   const navigate = useNavigate();
+
+  const getServiceLogs = useServerFn($getServiceLogs);
+  const getSlowLogs = useServerFn($getSlowLogs);
 
   const period = usePeriodStore((s) => s.period);
   const [searchValue, setSearchValue] = useState(searchParams.search ?? "");
@@ -103,39 +98,66 @@ function LogsPage() {
     });
   }, [debouncedSearch, navigate, serviceId]);
 
-  const logsQuery = useInfiniteQuery<LogsPageResult>({
+  const allLogsQuery = useInfiniteQuery({
     queryKey: queryKeys.logs(serviceId, {
       period,
-      view: searchParams.view,
       search: searchParams.search,
       level: searchParams.level,
       method: searchParams.method,
       status: searchParams.status,
+      view: "all",
     }),
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const cursor = typeof pageParam === "string" ? pageParam : undefined;
-
-      const params = {
-        serviceId,
-        period,
-        search: searchParams.search,
-        level: searchParams.level,
-        method: searchParams.method,
-        status: searchParams.status,
-        cursor,
-        limit: 100,
-      };
-      if (isSlowView) {
-        const result = await $getSlowLogs({
-          data: { ...params, minDuration: 500 },
-        });
-        return result as LogsPageResult;
-      }
-      return (await $getServiceLogs({ data: params })) as LogsPageResult;
+      return getServiceLogs({
+        data: {
+          serviceId,
+          period,
+          search: searchParams.search,
+          level: searchParams.level,
+          method: searchParams.method,
+          status: searchParams.status,
+          cursor,
+          limit: 100,
+        },
+      });
     },
     getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+    enabled: !isSlowView,
   });
+
+  const slowLogsQuery = useInfiniteQuery({
+    queryKey: queryKeys.logs(serviceId, {
+      period,
+      search: searchParams.search,
+      level: searchParams.level,
+      method: searchParams.method,
+      status: searchParams.status,
+      view: "slow",
+    }),
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const cursor = typeof pageParam === "string" ? pageParam : undefined;
+      return getSlowLogs({
+        data: {
+          serviceId,
+          period,
+          search: searchParams.search,
+          level: searchParams.level,
+          method: searchParams.method,
+          status: searchParams.status,
+          cursor,
+          limit: 100,
+          minDuration: 500,
+        },
+      });
+    },
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
+    enabled: isSlowView,
+  });
+
+  const logsQuery = isSlowView ? slowLogsQuery : allLogsQuery;
 
   const logs = useMemo(
     () => logsQuery.data?.pages.flatMap((p) => p.logs) ?? [],

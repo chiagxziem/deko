@@ -1,3 +1,4 @@
+import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -22,6 +23,7 @@ import {
 } from "@repo/db/validators/dashboard.validator";
 
 import { $fetchAndThrow } from "@/lib/fetch";
+import { queryKeys } from "@/lib/query-keys";
 import { successResSchema } from "@/lib/schemas";
 
 // ————— get service logs ———————————————————
@@ -88,6 +90,16 @@ export const $getSingleLog = createServerFn()
 
     return res.data;
   });
+// get single log query options
+export const singleLogQueryOptions = (
+  serviceId: string,
+  logId: string,
+  timestamp: string,
+) =>
+  queryOptions({
+    queryKey: queryKeys.singleLog(serviceId, logId),
+    queryFn: () => $getSingleLog({ data: { serviceId, logId, timestamp } }),
+  });
 
 // ————— get overview stats ———————————————————
 export const $getOverviewStats = createServerFn()
@@ -103,6 +115,15 @@ export const $getOverviewStats = createServerFn()
 
     return res.data;
   });
+// get overview stats query options
+export const overviewStatsQueryOptions = (
+  serviceId: string,
+  filters: Record<string, unknown>,
+) =>
+  queryOptions({
+    queryKey: queryKeys.overviewStats(serviceId, filters),
+    queryFn: () => $getOverviewStats({ data: { serviceId, ...filters } }),
+  });
 
 // ————— get timeseries stats ———————————————————
 export const $getTimeseriesStats = createServerFn()
@@ -117,6 +138,15 @@ export const $getTimeseriesStats = createServerFn()
     });
 
     return res.data;
+  });
+// get timeseries stats query options
+export const timeseriesStatsQueryOptions = (
+  serviceId: string,
+  filters: Record<string, unknown>,
+) =>
+  queryOptions({
+    queryKey: queryKeys.timeseriesStats(serviceId, filters),
+    queryFn: () => $getTimeseriesStats({ data: { serviceId, ...filters } }),
   });
 
 // ————— get status code breakdown ———————————————————
@@ -136,6 +166,15 @@ export const $getStatusBreakdown = createServerFn()
 
     return res.data;
   });
+// get status code breakdown query options
+export const statusBreakdownQueryOptions = (
+  serviceId: string,
+  filters: Record<string, unknown>,
+) =>
+  queryOptions({
+    queryKey: queryKeys.statusBreakdown(serviceId, filters),
+    queryFn: () => $getStatusBreakdown({ data: { serviceId, ...filters } }),
+  });
 
 // ————— get log level breakdown ———————————————————
 export const $getLogLevelBreakdown = createServerFn()
@@ -153,6 +192,15 @@ export const $getLogLevelBreakdown = createServerFn()
     );
 
     return res.data;
+  });
+// get log level breakdown query options
+export const logLevelBreakdownQueryOptions = (
+  serviceId: string,
+  filters: Record<string, unknown>,
+) =>
+  queryOptions({
+    queryKey: queryKeys.logLevelBreakdown(serviceId, filters),
+    queryFn: () => $getLogLevelBreakdown({ data: { serviceId, ...filters } }),
   });
 
 // ————— get top endpoints ———————————————————
@@ -172,6 +220,15 @@ export const $getTopEndpoints = createServerFn()
 
     return res.data;
   });
+// get top endpoints query options
+export const topEndpointsQueryOptions = (
+  serviceId: string,
+  filters: Record<string, unknown>,
+) =>
+  queryOptions({
+    queryKey: queryKeys.topEndpoints(serviceId, filters),
+    queryFn: () => $getTopEndpoints({ data: { serviceId, ...filters } }),
+  });
 
 // ————— get error groups ———————————————————
 export const $getErrorGroups = createServerFn()
@@ -186,4 +243,13 @@ export const $getErrorGroups = createServerFn()
     });
 
     return res.data;
+  });
+// get error groups query options
+export const errorGroupsQueryOptions = (
+  serviceId: string,
+  filters: Record<string, unknown>,
+) =>
+  queryOptions({
+    queryKey: queryKeys.errorGroups(serviceId, filters),
+    queryFn: () => $getErrorGroups({ data: { serviceId, ...filters } }),
   });

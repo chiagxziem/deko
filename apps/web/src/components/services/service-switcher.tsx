@@ -57,6 +57,7 @@ export function ServiceSwitcher() {
     await navigate({
       to: "/services/$serviceId/overview",
       params: { serviceId: service.id },
+      reloadDocument: true,
     });
   };
 
@@ -70,7 +71,9 @@ export function ServiceSwitcher() {
             className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
           >
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <span className="font-bold">{activeService?.name.charAt(0)}</span>
+              <span className="font-bold uppercase">
+                {activeService?.name.charAt(0)}
+              </span>
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">

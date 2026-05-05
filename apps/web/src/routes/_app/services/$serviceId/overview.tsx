@@ -24,19 +24,47 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
+import { cn, resolvePeriodForLoader } from "@/lib/utils";
 import {
   $getLogLevelBreakdown,
   $getOverviewStats,
   $getStatusBreakdown,
   $getTimeseriesStats,
   $getTopEndpoints,
+  logLevelBreakdownQueryOptions,
+  overviewStatsQueryOptions,
+  statusBreakdownQueryOptions,
+  timeseriesStatsQueryOptions,
+  topEndpointsQueryOptions,
 } from "@/server/dashboard";
 import { usePeriodStore } from "@/stores/period-store";
 
 export const Route = createFileRoute("/_app/services/$serviceId/overview")({
   component: OverviewPage,
+  loader: async ({ context, params }) => {
+    const { serviceId } = params;
+    const period = resolvePeriodForLoader();
+
+    await context.queryClient.ensureQueryData(
+      overviewStatsQueryOptions(serviceId, { period }),
+    );
+    await context.queryClient.ensureQueryData(
+      timeseriesStatsQueryOptions(serviceId, { period }),
+    );
+    await context.queryClient.ensureQueryData(
+      statusBreakdownQueryOptions(serviceId, { period }),
+    );
+    await context.queryClient.ensureQueryData(
+      logLevelBreakdownQueryOptions(serviceId, { period }),
+    );
+    await context.queryClient.ensureQueryData(
+      topEndpointsQueryOptions(serviceId, {
+        period,
+        sortBy: "requests",
+        limit: 5,
+      }),
+    );
+  },
 });
 
 const EMPTY_TOP_ENDPOINTS: TopEndpoint[] = [];
@@ -60,28 +88,28 @@ function OverviewPage() {
   const period = usePeriodStore((s) => s.period);
 
   const overviewQuery = useQuery({
-    queryKey: queryKeys.overviewStats(serviceId, { period }),
+    ...overviewStatsQueryOptions(serviceId, { period }),
     queryFn: () => getOverviewStats({ data: { serviceId, period } }),
   });
 
   const timeseriesQuery = useQuery({
-    queryKey: queryKeys.timeseriesStats(serviceId, { period }),
+    ...timeseriesStatsQueryOptions(serviceId, { period }),
     queryFn: () => getTimeseriesStats({ data: { serviceId, period } }),
   });
 
   const statusQuery = useQuery({
-    queryKey: queryKeys.statusBreakdown(serviceId, { period }),
+    ...statusBreakdownQueryOptions(serviceId, { period }),
     queryFn: () =>
       getStatusBreakdown({ data: { serviceId, period, groupBy: "category" } }),
   });
 
   const levelQuery = useQuery({
-    queryKey: queryKeys.logLevelBreakdown(serviceId, { period }),
+    ...logLevelBreakdownQueryOptions(serviceId, { period }),
     queryFn: () => getLogLevelBreakdown({ data: { serviceId, period } }),
   });
 
   const topEndpointsQuery = useQuery({
-    queryKey: queryKeys.topEndpoints(serviceId, {
+    ...topEndpointsQueryOptions(serviceId, {
       period,
       sortBy: "requests",
       limit: 5,
