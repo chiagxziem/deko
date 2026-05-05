@@ -1,15 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  createFileRoute,
-  useNavigate,
-  useParams,
-} from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
 
 import type { TopEndpoint } from "@repo/db/validators/dashboard.validator";
 
 import { TopEndpointsPreview } from "@/components/endpoints/endpoints-table";
+import { TokenOnboardingDialog } from "@/components/onboarding/token-onboarding-dialog";
 import {
   LogLevelBreakdownChart,
   LogLevelBreakdownChartSkeleton,
@@ -21,16 +17,6 @@ import {
   TimeseriesChart,
   TimeseriesChartSkeleton,
 } from "@/components/overview/timeseries-chart";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import {
   Empty,
@@ -38,10 +24,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  TOKEN_GUIDE_PENDING_KEY,
-  TOKEN_GUIDE_SEEN_KEY,
-} from "@/lib/onboarding";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import {
@@ -51,7 +33,6 @@ import {
   $getTimeseriesStats,
   $getTopEndpoints,
 } from "@/server/dashboard";
-import { useDialogStore } from "@/stores/dialog-store";
 import { usePeriodStore } from "@/stores/period-store";
 
 export const Route = createFileRoute("/_app/services/$serviceId/overview")({
@@ -66,7 +47,6 @@ function fmtDuration(ms: number) {
 }
 
 function OverviewPage() {
-  const navigate = useNavigate();
   const { serviceId } = useParams({
     from: "/_app/services/$serviceId/overview",
   });
@@ -78,33 +58,6 @@ function OverviewPage() {
   const getTopEndpoints = useServerFn($getTopEndpoints);
 
   const period = usePeriodStore((s) => s.period);
-  const openDialog = useDialogStore((s) => s.openDialog);
-  const [showTokenGuide, setShowTokenGuide] = useState(false);
-
-  useEffect(() => {
-    const shouldShow = sessionStorage.getItem(TOKEN_GUIDE_PENDING_KEY) === "1";
-    const alreadySeen = localStorage.getItem(TOKEN_GUIDE_SEEN_KEY) === "1";
-
-    if (shouldShow && !alreadySeen) {
-      sessionStorage.removeItem(TOKEN_GUIDE_PENDING_KEY);
-      setShowTokenGuide(true);
-    }
-  }, []);
-
-  const closeTokenGuide = () => {
-    localStorage.setItem(TOKEN_GUIDE_SEEN_KEY, "1");
-    setShowTokenGuide(false);
-  };
-
-  const goToTokenSetup = async () => {
-    closeTokenGuide();
-    await navigate({
-      to: "/services/$serviceId/settings",
-      params: { serviceId },
-      search: { section: "tokens" },
-    });
-    openDialog({ type: "create-token", serviceId });
-  };
 
   const overviewQuery = useQuery({
     queryKey: queryKeys.overviewStats(serviceId, { period }),
@@ -144,28 +97,8 @@ function OverviewPage() {
 
   return (
     <>
-      <AlertDialog
-        open={showTokenGuide}
-        onOpenChange={(open) => !open && closeTokenGuide()}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Create your first ingest token</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your service is ready. Next, create a token in Settings and use it
-              in your app to send logs to Deko via the
-              <strong> x-deko-service-token </strong>
-              header.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Later</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void goToTokenSetup()}>
-              Go to Settings
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Alert Dialog that gets shown after the user creates their first service */}
+      <TokenOnboardingDialog />
 
       <div className="flex flex-col gap-6">
         <div>
@@ -176,7 +109,7 @@ function OverviewPage() {
         </div>
 
         {/* KPI stat cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
           {overviewQuery.isPending ? (
             <>
               <StatCardSkeleton />
@@ -212,7 +145,7 @@ function OverviewPage() {
             <EmptyCard
               title="Overview Metrics"
               description="No metrics available for the selected period."
-              className="sm:col-span-2 lg:col-span-5"
+              className="sm:col-span-2 lg:col-span-3 2xl:col-span-5"
             />
           ) : (
             <>

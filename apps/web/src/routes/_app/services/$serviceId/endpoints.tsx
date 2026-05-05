@@ -54,6 +54,8 @@ function EndpointsPage() {
   });
   const navigate = useNavigate();
 
+  const getTopEndpoints = useServerFn($getTopEndpoints);
+
   const searchParamsRef = useRef(searchParams);
 
   useEffect(() => {
@@ -75,8 +77,6 @@ function EndpointsPage() {
 
   const period = usePeriodStore((s) => s.period);
   const sortBy = searchParams.sortBy;
-
-  const getTopEndpoints = useServerFn($getTopEndpoints);
 
   const endpointsQuery = useQuery({
     queryKey: queryKeys.topEndpoints(serviceId, { period, sortBy, limit: 50 }),

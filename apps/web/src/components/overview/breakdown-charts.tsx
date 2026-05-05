@@ -23,9 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// ——————————————————————————————————————————————
-// STATUS BREAKDOWN
-// ——————————————————————————————————————————————
+// STATUS LEVEL BREAKDOWN
 
 const STATUS_COLORS: Record<string, string> = {
   "2xx": "hsl(142 71% 45%)",
@@ -51,7 +49,6 @@ interface StatusBreakdownChartProps {
 export function StatusBreakdownChart({ data }: StatusBreakdownChartProps) {
   const isMobile = useIsMobile();
 
-  // Only handle category groupBy in overview
   const categoryBreakdown = useMemo(
     () =>
       data.breakdown.filter((item) => "category" in item) as {
@@ -183,9 +180,7 @@ export function StatusBreakdownChartSkeleton() {
   );
 }
 
-// ——————————————————————————————————————————————
 // LOG LEVEL BREAKDOWN
-// ——————————————————————————————————————————————
 
 const LEVEL_COLORS: Record<string, string> = {
   info: "hsl(217 91% 60%)",

@@ -48,9 +48,7 @@ export function TimeseriesChart({ data }: TimeseriesChartProps) {
   return (
     <Card>
       <CardHeader className="border-b border-border/50 pb-3">
-        <CardTitle className="text-sm font-medium">
-          Requests &amp; Errors
-        </CardTitle>
+        <CardTitle className="text-sm font-medium">Requests & Errors</CardTitle>
       </CardHeader>
       <CardContent className="pt-4 pb-2">
         <ChartContainer config={chartConfig} className="h-52 w-full">

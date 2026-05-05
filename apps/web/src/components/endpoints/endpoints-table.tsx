@@ -169,9 +169,7 @@ export const endpointFilters: FilterConfig[] = [
   },
 ];
 
-// ——————————————————————————————————————————————
 // Full endpoints table (standalone endpoints page)
-// ——————————————————————————————————————————————
 
 interface EndpointsTableProps {
   endpoints: TopEndpoint[];
@@ -226,9 +224,7 @@ function LoadingRows({ columnKeys }: { columnKeys: string[] }) {
   );
 }
 
-// ——————————————————————————————————————————————
 // Overview preview (compact, no sort controls)
-// ——————————————————————————————————————————————
 
 interface TopEndpointsPreviewProps {
   endpoints: TopEndpoint[];
