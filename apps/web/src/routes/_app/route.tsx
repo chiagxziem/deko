@@ -12,7 +12,6 @@ import {
 } from "@/server/services";
 
 export const Route = createFileRoute("/_app")({
-  ssr: "data-only",
   beforeLoad: async ({ context }) => {
     const services = await context.queryClient.ensureQueryData(
       servicesQueryOptions(),

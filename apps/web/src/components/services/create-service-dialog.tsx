@@ -64,6 +64,7 @@ export function CreateServiceDialog() {
         to: "/services/$serviceId/overview",
         params: { serviceId: newService.id },
         replace: true,
+        reloadDocument: true,
       });
     },
     onError: (err) => {

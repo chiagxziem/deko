@@ -119,7 +119,11 @@ export function DeleteServiceDialogHost() {
       }
       closeDialog();
       setConfirmValue("");
-      await navigate({ to: "/get-started" });
+      await navigate({
+        to: "/get-started",
+        replace: true,
+        reloadDocument: true,
+      });
     },
     onError: (err) => {
       handleError(err, "Failed to delete service");
