@@ -106,7 +106,7 @@ export function ServiceSwitcher() {
                   className="p-1.5"
                 >
                   <div className="flex size-6 items-center justify-center rounded-md border">
-                    <span className="text-[0.625rem] font-bold">
+                    <span className="text-[0.625rem] font-bold uppercase">
                       {service.name.charAt(0)}
                     </span>
                   </div>

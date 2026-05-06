@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-type SimulationMode = "steady" | "bursty" | "chaos";
+type SimulationMode = "steady" | "bursty" | "chaos" | "real";
 type LogLevel = "debug" | "info" | "warn" | "error";
 type HttpMethod =
   | "GET"
@@ -26,65 +26,222 @@ const app = new Hono();
 const API_URL = process.env.API_URL || "http://localhost:8000";
 const SERVICE_TOKEN = process.env.SERVICE_TOKEN;
 const BASE_INTERVAL_MS = parseInt(process.env.INTERVAL_MS || "2500", 10);
-const VALID_MODES: SimulationMode[] = ["steady", "bursty", "chaos"];
+const VALID_MODES: SimulationMode[] = ["steady", "bursty", "chaos", "real"];
 
 // Endpoint profiles shape generated traffic so each route has distinct behavior.
+// Status pools are weighted toward 2xx — global error rate target is <15%.
 const endpointProfiles: EndpointProfile[] = [
   {
     pathTemplates: ["/api/health"],
     methods: ["GET"],
     baseDurationMs: 10,
     p95Multiplier: 1.8,
-    statusPool: [200, 200, 200, 200, 200, 503],
-    levelBias: ["debug", "info", "info", "info", "warn"],
+    // ~3% errors (1 non-2xx in 30)
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 503, 504,
+    ],
+    levelBias: ["debug", "debug", "info", "info", "info"],
     category: "infrastructure",
   },
   {
-    pathTemplates: ["/api/auth/login", "/api/auth/refresh"],
+    pathTemplates: ["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"],
     methods: ["POST"],
     baseDurationMs: 90,
     p95Multiplier: 3.2,
-    statusPool: [200, 200, 200, 401, 401, 429, 500],
-    levelBias: ["info", "info", "warn", "error"],
+    // ~14% errors — auth is legitimately noisier (wrong passwords, expired tokens)
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 401, 401,
+      429, 500, 502,
+    ],
+    levelBias: ["info", "info", "info", "info", "warn"],
     category: "auth",
   },
   {
-    pathTemplates: ["/api/users", "/api/users/:id"],
+    pathTemplates: [
+      "/api/users",
+      "/api/users/:id",
+      "/api/users/:id/profile",
+      "/api/users/:id/preferences",
+    ],
     methods: ["GET", "PATCH"],
     baseDurationMs: 55,
     p95Multiplier: 2.6,
-    statusPool: [200, 200, 200, 200, 404, 500],
-    levelBias: ["debug", "info", "info", "warn", "error"],
+    // ~8% errors
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
+      404, 404, 500, 503,
+    ],
+    levelBias: ["debug", "info", "info", "info", "warn"],
     category: "user",
   },
   {
-    pathTemplates: ["/api/products", "/api/products/:id", "/api/search"],
+    pathTemplates: [
+      "/api/products",
+      "/api/products/:id",
+      "/api/products/:id/reviews",
+      "/api/search",
+      "/api/categories",
+    ],
     methods: ["GET"],
     baseDurationMs: 45,
     p95Multiplier: 2.0,
-    statusPool: [200, 200, 200, 200, 304, 404, 500],
-    levelBias: ["debug", "info", "info", "info", "warn"],
+    // ~5% errors — catalog reads are stable
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
+      200, 200, 200, 304, 304, 404, 500,
+    ],
+    levelBias: ["debug", "debug", "info", "info", "info"],
     category: "catalog",
   },
   {
-    pathTemplates: ["/api/cart", "/api/checkout", "/api/orders"],
+    pathTemplates: [
+      "/api/cart",
+      "/api/cart/:id",
+      "/api/checkout",
+      "/api/orders",
+      "/api/orders/:id",
+      "/api/orders/:id/cancel",
+    ],
     methods: ["GET", "POST", "DELETE"],
     baseDurationMs: 135,
     p95Multiplier: 4.0,
-    statusPool: [200, 200, 201, 201, 400, 409, 422, 500],
-    levelBias: ["info", "info", "warn", "error", "error"],
+    // ~13% errors — commerce touches more dependencies so slightly higher
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 201, 201, 201,
+      204, 400, 409, 422, 500, 502, 503,
+    ],
+    levelBias: ["info", "info", "info", "warn", "error"],
     category: "commerce",
   },
   {
-    pathTemplates: ["/api/settings"],
+    pathTemplates: [
+      "/api/settings",
+      "/api/settings/notifications",
+      "/api/settings/security",
+    ],
     methods: ["GET", "PUT"],
     baseDurationMs: 65,
     p95Multiplier: 2.4,
-    statusPool: [200, 200, 204, 400, 403, 500],
-    levelBias: ["info", "info", "warn", "error"],
+    // ~6% errors
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
+      204, 204, 400, 403, 500,
+    ],
+    levelBias: ["info", "info", "info", "info", "warn"],
     category: "config",
   },
+  {
+    pathTemplates: [
+      "/api/notifications",
+      "/api/notifications/:id/read",
+      "/api/notifications/mark-all-read",
+    ],
+    methods: ["GET", "POST", "PATCH"],
+    baseDurationMs: 40,
+    p95Multiplier: 2.1,
+    // ~4% errors — lightweight service
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
+      200, 200, 200, 200, 200, 204, 204, 404, 500,
+    ],
+    levelBias: ["debug", "info", "info", "info", "info"],
+    category: "notifications",
+  },
+  {
+    pathTemplates: ["/api/analytics/events", "/api/analytics/pageview"],
+    methods: ["POST"],
+    baseDurationMs: 25,
+    p95Multiplier: 1.9,
+    // ~3% errors — fire-and-forget, rarely fails
+    statusPool: [
+      200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
+      200, 200, 200, 200, 200, 202, 202, 202, 202, 202, 202, 202, 202, 202, 202,
+      400, 500, 504,
+    ],
+    levelBias: ["debug", "debug", "debug", "info", "info"],
+    category: "analytics",
+  },
 ];
+
+// More varied error messages by status code
+const errorMessages: Record<number, string[]> = {
+  400: [
+    "Malformed JSON body in request",
+    "Missing required field in payload",
+    "Invalid query parameter format",
+    "Request body exceeds allowed schema",
+  ],
+  401: [
+    "Bearer token has expired",
+    "Invalid or missing Authorization header",
+    "Session has been revoked",
+    "Token signature verification failed",
+  ],
+  403: [
+    "Insufficient permissions for this resource",
+    "Account does not have access to this feature",
+    "Resource is locked for editing",
+    "IP address is not in the allowlist",
+  ],
+  404: [
+    "Resource not found",
+    "Entity has been permanently deleted",
+    "Route does not exist",
+    "Referenced object ID is unknown",
+  ],
+  408: [
+    "Client did not send request in time",
+    "Request timed out waiting for body",
+  ],
+  409: [
+    "Conflict: resource already exists",
+    "Concurrent modification detected",
+    "Duplicate entry violates unique constraint",
+  ],
+  413: [
+    "Payload too large — max 10MB allowed",
+    "File upload exceeds size limit",
+  ],
+  415: [
+    "Unsupported media type",
+    "Expected application/json but received text/plain",
+  ],
+  422: [
+    "Validation failed: email is not a valid address",
+    "Unprocessable entity — business rule violation",
+    "Field 'quantity' must be a positive integer",
+    "Coupon code has already been redeemed",
+  ],
+  429: [
+    "Rate limit exceeded — try again in 60s",
+    "Too many requests from this IP",
+    "Quota exhausted for this API key",
+  ],
+  500: [
+    "Upstream dependency failure",
+    "Unhandled exception in request handler",
+    "Database query returned unexpected null",
+    "Internal serialization error",
+    "Downstream service returned malformed response",
+  ],
+  502: [
+    "Bad gateway — upstream returned invalid response",
+    "Proxy received empty response from origin",
+    "Load balancer could not reach backend",
+  ],
+  503: [
+    "Service temporarily unavailable",
+    "Dependency circuit breaker is open",
+    "Server is under maintenance",
+    "Database connection pool exhausted",
+  ],
+  504: [
+    "Gateway timeout — upstream took too long",
+    "Backend did not respond within deadline",
+    "Database query exceeded 30s timeout",
+  ],
+};
 
 const environments = [
   "production",
@@ -95,6 +252,16 @@ const environments = [
 ];
 const regions = ["us-east-1", "eu-west-1", "ap-southeast-1"];
 const browsers = ["chrome", "firefox", "safari", "edge"];
+const upstreams = [
+  "payments-service",
+  "inventory-service",
+  "email-service",
+  "search-service",
+  "cdn",
+  "none",
+  "none",
+  "none",
+];
 
 type SimulationStats = {
   sentEvents: number;
@@ -128,11 +295,10 @@ function randomChance(probability: number): boolean {
 
 function resolvePath(template: string): string {
   if (!template.includes(":id")) return template;
-  return template.replace(":id", randomInt(1, 1000).toString());
+  return template.replace(":id", randomInt(1, 9999).toString());
 }
 
 function generateDuration(profile: EndpointProfile): number {
-  // Tail latency sampling ensures p95/p99 charts are meaningful.
   const isTail = randomChance(0.08);
   const multiplier = isTail
     ? profile.p95Multiplier + Math.random() * 2.5
@@ -146,6 +312,11 @@ function generateMessage(
   status: number,
   level: LogLevel,
 ): string {
+  // Use varied error messages when available for this status
+  if (status >= 400 && errorMessages[status]) {
+    return getRandom(errorMessages[status]);
+  }
+
   if (status >= 500) {
     return `Upstream dependency failure while handling ${method} ${path}`;
   }
@@ -160,6 +331,14 @@ function generateMessage(
 
   if (status === 304) {
     return `Cache hit for ${method} ${path}`;
+  }
+
+  if (status === 202) {
+    return `Request accepted for async processing: ${method} ${path}`;
+  }
+
+  if (status === 204) {
+    return `No content returned for ${method} ${path}`;
   }
 
   return `Request completed for ${method} ${path}`;
@@ -192,23 +371,167 @@ function generateRandomLog() {
       region: getRandom(regions),
       browser: getRandom(browsers),
       category: profile.category,
-      retryCount: randomChance(0.1) ? randomInt(1, 3) : 0,
+      retryCount: randomChance(0.07) ? randomInt(1, 3) : 0,
       cacheHit: status === 304,
-      upstream: randomChance(0.15) ? "payments-service" : "none",
+      upstream: getRandom(upstreams),
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// "real" mode — simulates a realistic production traffic cycle.
+//
+// Traffic moves through three tiers: high → medium → low. The order within
+// each tier is shuffled so no two cycles look the same, and no phase repeats
+// back-to-back. Durations are randomized within realistic bounds.
+//
+// High   → 30–60 min   (dense bursts, short pauses)
+// Medium → 3–5 hours   (moderate, steady-ish)
+// Low    → 8–12 hours  (sparse, long gaps — night-time / off-peak)
+// ---------------------------------------------------------------------------
+
+type TrafficTier = "high" | "medium" | "low";
+
+type RealPhase = {
+  tier: TrafficTier;
+  durationMs: number;
+};
+
+type RealState = {
+  phases: RealPhase[];
+  currentPhaseIndex: number;
+  phaseStartedAt: number; // Date.now()
+};
+
+const TIER_DURATIONS_MS: Record<TrafficTier, [number, number]> = {
+  high: [30 * 60_000, 60 * 60_000],
+  medium: [3 * 60 * 60_000, 5 * 60 * 60_000],
+  low: [8 * 60 * 60_000, 12 * 60 * 60_000],
+};
+
+function randomDurationInRange([min, max]: [number, number]): number {
+  return randomInt(min, max);
+}
+
+/**
+ * Shuffle an array in place (Fisher-Yates).
+ */
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Build a fresh cycle of phases. The three tiers always appear exactly once,
+ * in a shuffled order so no cycle is identical. We also ensure that the first
+ * phase of the new cycle differs from the last phase of the previous cycle so
+ * the same tier never runs back-to-back across cycle boundaries.
+ */
+function buildRealCycle(lastTier?: TrafficTier): RealPhase[] {
+  const tiers: TrafficTier[] = ["high", "medium", "low"];
+  shuffle(tiers);
+
+  // Avoid same tier at cycle boundary
+  if (lastTier && tiers[0] === lastTier) {
+    // Swap first with a random other slot
+    const swapIdx = randomInt(1, tiers.length - 1);
+    [tiers[0], tiers[swapIdx]] = [tiers[swapIdx], tiers[0]];
+  }
+
+  return tiers.map((tier) => ({
+    tier,
+    durationMs: randomDurationInRange(TIER_DURATIONS_MS[tier]),
+  }));
+}
+
+let realState: RealState | null = null;
+
+function initRealState() {
+  const phases = buildRealCycle();
+  realState = {
+    phases,
+    currentPhaseIndex: 0,
+    phaseStartedAt: Date.now(),
+  };
+  console.log(
+    `[real] Starting cycle: ${phases.map((p) => `${p.tier}(${Math.round(p.durationMs / 60_000)}m)`).join(" → ")}`,
+  );
+}
+
+/**
+ * Advance the real-mode state machine if the current phase has elapsed.
+ * Returns the active tier.
+ */
+function tickRealState(): TrafficTier {
+  if (!realState) initRealState();
+  const state = realState!;
+
+  const elapsed = Date.now() - state.phaseStartedAt;
+  const current = state.phases[state.currentPhaseIndex];
+
+  if (elapsed >= current.durationMs) {
+    const nextIndex = state.currentPhaseIndex + 1;
+
+    if (nextIndex >= state.phases.length) {
+      // Cycle complete — build a new one, avoiding back-to-back repeat
+      const lastTier = current.tier;
+      const phases = buildRealCycle(lastTier);
+      realState = {
+        phases,
+        currentPhaseIndex: 0,
+        phaseStartedAt: Date.now(),
+      };
+      console.log(
+        `[real] New cycle: ${phases.map((p) => `${p.tier}(${Math.round(p.durationMs / 60_000)}m)`).join(" → ")}`,
+      );
+      return realState.phases[0].tier;
+    } else {
+      state.currentPhaseIndex = nextIndex;
+      state.phaseStartedAt = Date.now();
+      const next = state.phases[nextIndex];
+      console.log(
+        `[real] Phase transition → ${next.tier} for ${Math.round(next.durationMs / 60_000)}m`,
+      );
+    }
+  }
+
+  return state.phases[state.currentPhaseIndex].tier;
+}
+
+// ---------------------------------------------------------------------------
+// Batch size and delay per mode/tier
+// ---------------------------------------------------------------------------
+
+function getBatchSizeForTier(tier: TrafficTier): number {
+  if (tier === "high")
+    return randomChance(0.6) ? randomInt(12, 25) : randomInt(26, 45);
+  if (tier === "medium")
+    return randomChance(0.7) ? randomInt(3, 8) : randomInt(9, 15);
+  return randomChance(0.8) ? randomInt(1, 3) : randomInt(4, 6);
+}
+
+function getNextDelayMsForTier(tier: TrafficTier): number {
+  if (tier === "high") return randomInt(100, 400);
+  if (tier === "medium") return randomInt(800, BASE_INTERVAL_MS * 1.5);
+  return randomInt(BASE_INTERVAL_MS * 2, BASE_INTERVAL_MS * 6);
 }
 
 function getBatchSize(mode: SimulationMode): number {
   if (mode === "steady") {
     return randomChance(0.85) ? randomInt(1, 4) : randomInt(5, 8);
   }
-
   if (mode === "bursty") {
     return randomChance(0.65) ? randomInt(4, 12) : randomInt(13, 30);
   }
-
-  return randomChance(0.5) ? randomInt(8, 20) : randomInt(21, 45);
+  if (mode === "chaos") {
+    return randomChance(0.5) ? randomInt(8, 20) : randomInt(21, 45);
+  }
+  // "real" — delegate to tier logic
+  const tier = tickRealState();
+  return getBatchSizeForTier(tier);
 }
 
 function getNextDelayMs(mode: SimulationMode): number {
@@ -216,15 +539,24 @@ function getNextDelayMs(mode: SimulationMode): number {
     const jitter = randomInt(-250, 250);
     return Math.max(250, BASE_INTERVAL_MS + jitter);
   }
-
   if (mode === "bursty") {
     return randomChance(0.4)
       ? randomInt(150, 600)
       : randomInt(BASE_INTERVAL_MS, BASE_INTERVAL_MS * 2);
   }
-
-  return randomInt(80, Math.max(120, BASE_INTERVAL_MS));
+  if (mode === "chaos") {
+    return randomInt(80, Math.max(120, BASE_INTERVAL_MS));
+  }
+  // "real" — use current tier's delay profile
+  const tier = realState
+    ? realState.phases[realState.currentPhaseIndex].tier
+    : "medium";
+  return getNextDelayMsForTier(tier);
 }
+
+// ---------------------------------------------------------------------------
+// Simulation loop
+// ---------------------------------------------------------------------------
 
 let isSimulating = false;
 let currentMode: SimulationMode =
@@ -246,7 +578,6 @@ async function sendBatch(batchSize: number) {
         "Content-Type": "application/json",
         "x-deko-service-token": SERVICE_TOKEN,
       },
-      // Send arrays so ingest batch logic and dashboard distributions are exercised.
       body: JSON.stringify(logs),
     });
 
@@ -277,8 +608,13 @@ async function sendBatch(batchSize: number) {
     stats.lastRunAt = new Date().toISOString();
     stats.lastError = null;
 
+    const tierInfo =
+      currentMode === "real" && realState
+        ? ` tier=${realState.phases[realState.currentPhaseIndex].tier}`
+        : "";
+
     console.log(
-      `Batch sent: size=${batchSize} accepted=${accepted} rejected=${rejected} mode=${currentMode}`,
+      `Batch sent: size=${batchSize} accepted=${accepted} rejected=${rejected} mode=${currentMode}${tierInfo}`,
     );
   } catch (error) {
     stats.failedBatches += 1;
@@ -301,11 +637,15 @@ function startSimulation() {
   if (isSimulating) return;
 
   isSimulating = true;
+
+  if (currentMode === "real") {
+    initRealState();
+  }
+
   console.log(
     `Starting simulator: mode=${currentMode} baseIntervalMs=${BASE_INTERVAL_MS}`,
   );
 
-  // Send one batch immediately so data appears quickly after startup.
   void sendBatch(getBatchSize(currentMode));
   scheduleNextTick();
 }
@@ -329,10 +669,26 @@ function parseMode(input: string | undefined): SimulationMode | null {
     : null;
 }
 
+// ---------------------------------------------------------------------------
 // Routes
+// ---------------------------------------------------------------------------
+
 app.get("/", (c) => c.text("Deko log simulator is running"));
 
 app.get("/status", (c) => {
+  const realPhaseInfo =
+    currentMode === "real" && realState
+      ? {
+          currentTier: realState.phases[realState.currentPhaseIndex].tier,
+          phaseElapsedMs: Date.now() - realState.phaseStartedAt,
+          phaseDurationMs:
+            realState.phases[realState.currentPhaseIndex].durationMs,
+          remainingPhases: realState.phases
+            .slice(realState.currentPhaseIndex + 1)
+            .map((p) => p.tier),
+        }
+      : null;
+
   return c.json({
     isSimulating,
     mode: currentMode,
@@ -340,10 +696,14 @@ app.get("/status", (c) => {
     baseIntervalMs: BASE_INTERVAL_MS,
     hasToken: !!SERVICE_TOKEN,
     stats,
+    realPhaseInfo,
   });
 });
 
 app.post("/start", (c) => {
+  if (currentMode === "real" && !isSimulating) {
+    initRealState();
+  }
   startSimulation();
   return c.json({
     message: "Simulation started",
@@ -385,7 +745,14 @@ app.post("/mode/:mode", (c) => {
     );
   }
 
+  const wasReal = currentMode === "real";
   currentMode = mode;
+
+  // Re-initialise real state when switching into real mode
+  if (mode === "real" && !wasReal) {
+    initRealState();
+  }
+
   return c.json({
     message: "Simulation mode updated",
     mode: currentMode,
