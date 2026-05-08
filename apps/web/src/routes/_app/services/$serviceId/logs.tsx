@@ -19,12 +19,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -163,7 +157,6 @@ function LogsPage() {
     () => logsQuery.data?.pages.flatMap((p) => p.logs) ?? [],
     [logsQuery.data?.pages],
   );
-  const hasLogs = logs.length > 0;
   const loadingColumnKeys = useMemo(
     () =>
       logsColumns.map((column) => {
@@ -340,26 +333,15 @@ function LogsPage() {
         </p>
       </div>
 
-      {(hasLogs && !logsQuery.isError) || logsQuery.isPending ? (
-        <Tabs value={searchParams.view} onValueChange={handleViewChange}>
-          <TabsList>
-            <TabsTrigger value="all">All Logs</TabsTrigger>
-            <TabsTrigger value="slow">Slow Requests</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      ) : null}
+      <Tabs value={searchParams.view} onValueChange={handleViewChange}>
+        <TabsList>
+          <TabsTrigger value="all">All Logs</TabsTrigger>
+          <TabsTrigger value="slow">Slow Requests</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {logsQuery.isError ? (
         <LogsTableError onRetry={() => logsQuery.refetch()} />
-      ) : !logsQuery.isPending && !hasLogs ? (
-        <Empty className="p-6 pt-40">
-          <EmptyHeader>
-            <EmptyTitle>No logs</EmptyTitle>
-            <EmptyDescription>
-              No logs found for the selected period.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
       ) : (
         <>
           {tableElement}

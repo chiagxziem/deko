@@ -108,27 +108,24 @@ function EndpointsPage() {
         </p>
       </div>
 
-      {(endpoints.length !== 0 && !endpointsQuery.isError) ||
-      endpointsQuery.isLoading ? (
-        <Tabs
-          value={sortBy}
-          onValueChange={(value) =>
-            navigateWithSearch({ sortBy: value as TopEndpointSortBy })
-          }
-        >
-          <TabsList className="mb-4 h-auto flex-wrap justify-start gap-1">
-            {SORT_TAB_OPTIONS.map((option) => (
-              <TabsTrigger
-                key={option.value}
-                value={option.value}
-                className="flex-none"
-              >
-                {option.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      ) : null}
+      <Tabs
+        value={sortBy}
+        onValueChange={(value) =>
+          navigateWithSearch({ sortBy: value as TopEndpointSortBy })
+        }
+      >
+        <TabsList className="mb-4 h-auto flex-wrap justify-start gap-1">
+          {SORT_TAB_OPTIONS.map((option) => (
+            <TabsTrigger
+              key={option.value}
+              value={option.value}
+              className="flex-none"
+            >
+              {option.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {endpointsQuery.isError ? (
         <Alert variant="destructive" className="max-w-2xl">

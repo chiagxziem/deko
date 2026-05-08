@@ -81,8 +81,8 @@ export const errorGroupColumns: ColumnDef<ErrorGroup>[] = [
     header: "First Seen",
     enableSorting: false,
     meta: {
-      headerClassName: "hidden md:table-cell w-32 text-right",
-      cellClassName: "hidden md:table-cell text-right",
+      headerClassName: "table-cell w-32 text-right",
+      cellClassName: "table-cell text-right",
     },
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
@@ -95,8 +95,8 @@ export const errorGroupColumns: ColumnDef<ErrorGroup>[] = [
     header: "Last Seen",
     enableSorting: false,
     meta: {
-      headerClassName: "hidden md:table-cell w-32 text-right",
-      cellClassName: "hidden md:table-cell text-right",
+      headerClassName: "table-cell w-32 text-right",
+      cellClassName: "table-cell text-right",
     },
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
