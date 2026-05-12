@@ -20,6 +20,7 @@ import {
   createRateLimitErrorResponse,
   createServerErrorResponse,
   createSuccessResponse,
+  createTimeoutErrorResponse,
   getErrDetailsFromErrFields,
 } from "@/lib/openapi";
 import { dashboardExamples } from "@/lib/openapi-examples";
@@ -63,6 +64,7 @@ export const getServiceOverviewStatsDoc = describeRoute({
       },
     ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -109,6 +111,7 @@ export const getServiceTimeseriesStatsDoc = describeRoute({
       },
     ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -152,6 +155,7 @@ export const getServiceLogsDoc = describeRoute({
       },
     ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -236,6 +240,7 @@ export const getStatusCodeBreakdownDoc = describeRoute({
       },
     }),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -277,6 +282,7 @@ export const getLogLevelBreakdownDoc = describeRoute({
       },
     }),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -312,6 +318,7 @@ export const getTopEndpointsDoc = describeRoute({
       { code: "NOT_FOUND", details: "Service not found" },
     ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -348,6 +355,7 @@ export const getErrorGroupsDoc = describeRoute({
       { code: "NOT_FOUND", details: "Service not found" },
     ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -384,6 +392,7 @@ export const getLogsByRequestIdDoc = describeRoute({
       },
     }),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });
@@ -425,6 +434,7 @@ export const getSlowLogsDoc = describeRoute({
       { code: "NOT_FOUND", details: "Service not found" },
     ),
     [HttpStatusCodes.TOO_MANY_REQUESTS]: createRateLimitErrorResponse(),
+    [HttpStatusCodes.GATEWAY_TIMEOUT]: createTimeoutErrorResponse(),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: createServerErrorResponse(),
   },
 });

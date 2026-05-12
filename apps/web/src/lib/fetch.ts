@@ -6,11 +6,13 @@ import { errorResSchema } from "@/lib/schemas";
 import { env } from "./env";
 
 const baseURL = `${env.API_URL}/api`;
+const FETCH_TIMEOUT_MS = 30_000;
 
 export const $fetch = createFetch({
   baseURL,
   credentials: "include",
   errorSchema: errorResSchema,
+  timeout: FETCH_TIMEOUT_MS,
 });
 
 export const $fetchAndThrow = createFetch({
@@ -18,6 +20,7 @@ export const $fetchAndThrow = createFetch({
   throw: true,
   credentials: "include",
   errorSchema: errorResSchema,
+  timeout: FETCH_TIMEOUT_MS,
 });
 
 export const $fetchAndRetry = createFetch({
@@ -29,4 +32,5 @@ export const $fetchAndRetry = createFetch({
   },
   credentials: "include",
   errorSchema: errorResSchema,
+  timeout: FETCH_TIMEOUT_MS,
 });

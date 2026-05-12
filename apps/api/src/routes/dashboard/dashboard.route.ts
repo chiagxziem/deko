@@ -1,4 +1,6 @@
 import { validator } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
+import { timeout } from "hono/timeout";
 import { z } from "zod";
 
 import {
@@ -46,6 +48,13 @@ import {
   getTopEndpointsDoc,
 } from "./dashboard.docs";
 
+const TIMEOUT_MS = 30_000;
+
+const timeoutException = () =>
+  new HTTPException(HttpStatusCodes.GATEWAY_TIMEOUT, {
+    message: "Request timed out. Please try again later.",
+  });
+
 type DashboardRouteDeps = {
   dashboardRepository: IDashboardRepository;
   serviceRepository: IServiceRepository;
@@ -56,6 +65,9 @@ export const createDashboardRouter = ({
   serviceRepository,
 }: DashboardRouteDeps) => {
   const dashboard = createRouter();
+
+  // Apply timeout middleware to all dashboard routes
+  dashboard.use("*", timeout(TIMEOUT_MS, timeoutException));
 
   // ---------------------------------------------------------------------------
   // OVERVIEW STATS

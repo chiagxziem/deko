@@ -187,3 +187,31 @@ export const createServerErrorResponse = (details?: string) => {
 export const getErrDetailsFromErrFields = (fields: Record<string, string>) => {
   return `${Object.keys(fields)[0]}: ${Object.values(fields)[0]}`;
 };
+
+/**
+ * Helper function to create a timeout error response for OpenAPI responses.
+ */
+export const createTimeoutErrorResponse = (details?: string) => {
+  return {
+    description: "Request timeout",
+    content: {
+      "application/json": {
+        schema: resolver(createErrorResponseSchema()),
+        examples: {
+          error: {
+            summary: "Request timeout",
+            value: {
+              status: "error",
+              error: {
+                code: "GATEWAY_TIMEOUT",
+                details:
+                  details ?? "Request timed out. Please try again later.",
+                fields: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+};
