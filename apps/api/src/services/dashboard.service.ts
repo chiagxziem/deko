@@ -277,7 +277,7 @@ export const getLogConditions = (filters: LogFilters) => {
 // contributes to the same cache entries, with TTL managed by Redis itself.
 // ---------------------------------------------------------------------------
 
-const LOG_COUNT_CACHE_TTL_MS = 10_000;
+const LOG_COUNT_CACHE_TTL_MS = 30_000;
 const LOG_COUNT_CACHE_TTL_S = Math.ceil(LOG_COUNT_CACHE_TTL_MS / 1000);
 const LOG_COUNT_CACHE_PREFIX = "log-count-cache:";
 

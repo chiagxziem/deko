@@ -17,6 +17,7 @@ import {
 } from "@repo/db/validators/dashboard.validator";
 
 import { createRouter } from "@/app";
+import { getOrSetCache } from "@/lib/cache";
 import HttpStatusCodes from "@/lib/http-status-codes";
 import { errorResponse, successResponse } from "@/lib/utils";
 import { validationHook } from "@/middleware/validation-hook";
@@ -83,7 +84,6 @@ export const createDashboardRouter = ({
       const { serviceId } = c.req.valid("param");
       const { period, environment } = c.req.valid("query");
 
-      // ensure the service exists
       const service = await serviceRepository.getSingleService(serviceId);
       if (!service) {
         return c.json(
@@ -92,13 +92,38 @@ export const createDashboardRouter = ({
         );
       }
 
-      // get current period stats
-      const serviceOverviewStats =
-        await dashboardRepository.getServiceOverviewStats({
-          serviceId,
-          period,
-          environment,
-        });
+      const cacheKey = `overview:${serviceId}:${period}:${environment ?? "all"}`;
+
+      const response = await getOrSetCache(
+        cacheKey,
+        async () => {
+          const serviceOverviewStats =
+            await dashboardRepository.getServiceOverviewStats({
+              serviceId,
+              period,
+              environment,
+            });
+
+          if (serviceOverviewStats.totalRequests === 0) {
+            return null;
+          }
+
+          const prevPeriod = getPrevPeriod(period);
+          const prevPeriodOverviewStats =
+            await dashboardRepository.getServiceOverviewStats({
+              serviceId,
+              from: prevPeriod.from,
+              to: prevPeriod.to,
+              environment,
+            });
+
+          return {
+            current: serviceOverviewStats,
+            previous: prevPeriodOverviewStats,
+          };
+        },
+        30,
+      );
 
       const defaultOverviewStats: ServiceOverviewStats = {
         totalRequests: 0,
@@ -119,8 +144,7 @@ export const createDashboardRouter = ({
         },
       };
 
-      // return sensible default if there's no log in service yet
-      if (serviceOverviewStats.totalRequests === 0) {
+      if (response === null) {
         return c.json(
           successResponse(
             defaultOverviewStats,
@@ -130,42 +154,31 @@ export const createDashboardRouter = ({
         );
       }
 
-      // get previous period stats for comparison
-      const prevPeriod = getPrevPeriod(period);
-      const prevPeriodOverviewStats =
-        await dashboardRepository.getServiceOverviewStats({
-          serviceId,
-          from: prevPeriod.from,
-          to: prevPeriod.to,
-          environment,
-        });
+      const { current, previous } = response;
 
-      const response: ServiceOverviewStats = {
-        ...serviceOverviewStats,
+      const finalResponse: ServiceOverviewStats = {
+        ...current,
         period: {
-          from: serviceOverviewStats.period.from,
-          to: serviceOverviewStats.period.to,
+          from: current.period.from,
+          to: current.period.to,
         },
         comparison: {
           totalRequestsChange:
-            prevPeriodOverviewStats.totalRequests > 0
-              ? ((serviceOverviewStats.totalRequests -
-                  prevPeriodOverviewStats.totalRequests) /
-                  prevPeriodOverviewStats.totalRequests) *
+            previous.totalRequests > 0
+              ? ((current.totalRequests - previous.totalRequests) /
+                  previous.totalRequests) *
                 100
               : null,
           errorRateChange:
-            prevPeriodOverviewStats.errorRate > 0
-              ? ((serviceOverviewStats.errorRate -
-                  prevPeriodOverviewStats.errorRate) /
-                  prevPeriodOverviewStats.errorRate) *
+            previous.errorRate > 0
+              ? ((current.errorRate - previous.errorRate) /
+                  previous.errorRate) *
                 100
               : null,
           avgDurationChange:
-            prevPeriodOverviewStats.avgDuration > 0
-              ? ((serviceOverviewStats.avgDuration -
-                  prevPeriodOverviewStats.avgDuration) /
-                  prevPeriodOverviewStats.avgDuration) *
+            previous.avgDuration > 0
+              ? ((current.avgDuration - previous.avgDuration) /
+                  previous.avgDuration) *
                 100
               : null,
         },
@@ -173,7 +186,7 @@ export const createDashboardRouter = ({
 
       return c.json(
         successResponse(
-          response,
+          finalResponse,
           "Service overview statistics retrieved successfully",
         ),
         HttpStatusCodes.OK,
@@ -233,15 +246,22 @@ export const createDashboardRouter = ({
         );
       }
 
-      const serviceTimeseries = await dashboardRepository.getLogTimeseries({
-        serviceId,
-        period,
-        granularity,
-        environment,
-        method,
-        path,
-        level,
-      });
+      const timeseriesCacheKey = `timeseries:${serviceId}:${period}:${granularity}:${environment ?? "all"}:${method ?? "all"}:${path ?? "all"}:${level ?? "all"}`;
+
+      const serviceTimeseries = await getOrSetCache(
+        timeseriesCacheKey,
+        async () =>
+          dashboardRepository.getLogTimeseries({
+            serviceId,
+            period,
+            granularity,
+            environment,
+            method,
+            path,
+            level,
+          }),
+        180,
+      );
 
       const serviceTimeseriesStats: ServiceTimeseriesStats = {
         granularity: serviceTimeseries.granularity,
@@ -712,12 +732,19 @@ export const createDashboardRouter = ({
         );
       }
 
-      const breakdown = await dashboardRepository.getStatusCodeBreakdown({
-        serviceId,
-        period,
-        groupBy,
-        environment,
-      });
+      const statusCacheKey = `status-breakdown:${serviceId}:${period}:${groupBy}:${environment ?? "all"}`;
+
+      const breakdown = await getOrSetCache(
+        statusCacheKey,
+        async () =>
+          dashboardRepository.getStatusCodeBreakdown({
+            serviceId,
+            period,
+            groupBy,
+            environment,
+          }),
+        120,
+      );
 
       return c.json(
         successResponse(
@@ -751,11 +778,18 @@ export const createDashboardRouter = ({
         );
       }
 
-      const breakdown = await dashboardRepository.getLogLevelBreakdown({
-        serviceId,
-        period,
-        environment,
-      });
+      const levelCacheKey = `level-breakdown:${serviceId}:${period}:${environment ?? "all"}`;
+
+      const breakdown = await getOrSetCache(
+        levelCacheKey,
+        async () =>
+          dashboardRepository.getLogLevelBreakdown({
+            serviceId,
+            period,
+            environment,
+          }),
+        120,
+      );
 
       return c.json(
         successResponse(
@@ -796,14 +830,21 @@ export const createDashboardRouter = ({
         );
       }
 
-      const endpoints = await dashboardRepository.getTopEndpoints({
-        serviceId,
-        period,
-        sortBy,
-        environment,
-        method,
-        limit,
-      });
+      const endpointsCacheKey = `top-endpoints:${serviceId}:${period}:${sortBy}:${environment ?? "all"}:${method ?? "all"}:${limit}`;
+
+      const endpoints = await getOrSetCache(
+        endpointsCacheKey,
+        async () =>
+          dashboardRepository.getTopEndpoints({
+            serviceId,
+            period,
+            sortBy,
+            environment,
+            method,
+            limit,
+          }),
+        180,
+      );
 
       return c.json(
         successResponse(
@@ -843,12 +884,19 @@ export const createDashboardRouter = ({
         );
       }
 
-      const result = await dashboardRepository.getErrorGroups({
-        serviceId,
-        period,
-        environment,
-        limit,
-      });
+      const errorGroupsCacheKey = `error-groups:${serviceId}:${period}:${environment ?? "all"}:${limit}`;
+
+      const result = await getOrSetCache(
+        errorGroupsCacheKey,
+        async () =>
+          dashboardRepository.getErrorGroups({
+            serviceId,
+            period,
+            environment,
+            limit,
+          }),
+        120,
+      );
 
       return c.json(
         successResponse(result, "Error groups retrieved successfully"),
