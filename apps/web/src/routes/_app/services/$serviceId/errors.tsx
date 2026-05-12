@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { resolvePeriodForLoader } from "@/lib/utils";
 import { $getErrorGroups, errorGroupsQueryOptions } from "@/server/dashboard";
 import { usePeriodStore } from "@/stores/period-store";
 
@@ -35,10 +34,9 @@ export const Route = createFileRoute("/_app/services/$serviceId/errors")({
   validateSearch: errorsSearchSchema,
   loader: async ({ context, params }) => {
     const { serviceId } = params;
-    const period = resolvePeriodForLoader();
 
     await context.queryClient.ensureQueryData(
-      errorGroupsQueryOptions(serviceId, { period, limit: 100 }),
+      errorGroupsQueryOptions(serviceId, { period: "24h", limit: 100 }),
     );
   },
   component: ErrorsPage,

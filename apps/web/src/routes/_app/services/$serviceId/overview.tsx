@@ -24,7 +24,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { cn, resolvePeriodForLoader } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   $getLogLevelBreakdown,
   $getOverviewStats,
@@ -43,23 +43,22 @@ export const Route = createFileRoute("/_app/services/$serviceId/overview")({
   component: OverviewPage,
   loader: async ({ context, params }) => {
     const { serviceId } = params;
-    const period = resolvePeriodForLoader();
 
     await context.queryClient.ensureQueryData(
-      overviewStatsQueryOptions(serviceId, { period }),
+      overviewStatsQueryOptions(serviceId, { period: "24h" }),
     );
     await context.queryClient.ensureQueryData(
-      timeseriesStatsQueryOptions(serviceId, { period }),
+      timeseriesStatsQueryOptions(serviceId, { period: "24h" }),
     );
     await context.queryClient.ensureQueryData(
-      statusBreakdownQueryOptions(serviceId, { period }),
+      statusBreakdownQueryOptions(serviceId, { period: "24h" }),
     );
     await context.queryClient.ensureQueryData(
-      logLevelBreakdownQueryOptions(serviceId, { period }),
+      logLevelBreakdownQueryOptions(serviceId, { period: "24h" }),
     );
     await context.queryClient.ensureQueryData(
       topEndpointsQueryOptions(serviceId, {
-        period,
+        period: "24h",
         sortBy: "requests",
         limit: 5,
       }),

@@ -20,7 +20,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { resolvePeriodForLoader } from "@/lib/utils";
 import { $getTopEndpoints, topEndpointsQueryOptions } from "@/server/dashboard";
 import { usePeriodStore } from "@/stores/period-store";
 
@@ -45,11 +44,10 @@ export const Route = createFileRoute("/_app/services/$serviceId/endpoints")({
   loaderDeps: ({ search }) => ({ sortBy: search.sortBy }),
   loader: async ({ context, params, deps }) => {
     const { serviceId } = params;
-    const period = resolvePeriodForLoader();
 
     await context.queryClient.ensureQueryData(
       topEndpointsQueryOptions(serviceId, {
-        period,
+        period: "24h",
         sortBy: deps.sortBy,
         limit: 50,
       }),

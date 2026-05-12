@@ -1,10 +1,7 @@
 import { BetterFetchError } from "@better-fetch/fetch";
-import { createIsomorphicFn } from "@tanstack/react-start";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
-
-import { usePeriodStore } from "@/stores/period-store";
 
 import { AppBetterFetchError } from "./error";
 
@@ -52,10 +49,3 @@ export const truncateMiddle = (str: string, head = 10, tail = 10): string => {
   if (str.length <= head + tail + 1) return str;
   return `${str.slice(0, head)}\u2026${str.slice(-tail)}`;
 };
-
-/**
- * Resolves the period for data loading, returning a default value on the server and using the period store on the client.
- */
-export const resolvePeriodForLoader = createIsomorphicFn()
-  .server(() => "24h")
-  .client(() => usePeriodStore.getState().period);
