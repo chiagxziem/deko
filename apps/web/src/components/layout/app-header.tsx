@@ -94,6 +94,9 @@ export function AppHeader() {
   const prevErrorCount = useRef(0);
 
   useEffect(() => {
+    // don't show dialog in prod
+    if (import.meta.env.PROD) return;
+
     if (queryErrors.length > prevErrorCount.current && activeDialog === null) {
       openDialog({ type: "query-errors", errors: queryErrors });
     }
@@ -148,11 +151,13 @@ export function AppHeader() {
             hasError && "cursor-pointer hover:text-red-500",
           )}
           onKeyUp={() => {
+            if (import.meta.env.PROD) return;
             if (hasError) {
               openDialog({ type: "query-errors", errors: queryErrors });
             }
           }}
           onClick={() => {
+            if (import.meta.env.PROD) return;
             if (hasError) {
               openDialog({ type: "query-errors", errors: queryErrors });
             }
