@@ -188,7 +188,7 @@ export class DashboardRepository implements IDashboardRepository {
       endTime = to ?? new Date();
     }
 
-    // For period-based requests (1h/24h/7d/30d), anchor both the filter window and
+    // For period-based requests (1h/24h/7d), anchor both the filter window and
     // the generated bucket series to the database clock so bucket edges line up with
     // the aggregated data for every supported granularity.
     const rangeStartExpression = period

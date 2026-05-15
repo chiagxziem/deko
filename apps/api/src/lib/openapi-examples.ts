@@ -50,19 +50,19 @@ export const dashboardExamples = {
   serviceOverviewStatsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: {
-      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"',
     },
   },
   serviceTimeseriestatsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: {
-      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"',
     },
   },
   serviceLogsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: {
-      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"',
       level: 'Invalid option: expected one of "info"|"warn"|"error"|"debug"',
       method:
         'Invalid option: expected one of "GET"|"HEAD"|"POST"|"PUT"|"PATCH"|"DELETE"|"CONNECT"|"OPTIONS"|"TRACE"',
@@ -78,7 +78,7 @@ export const dashboardExamples = {
   breakdownValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: {
-      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"',
     },
   },
   // top-endpoints errors
@@ -93,7 +93,7 @@ export const dashboardExamples = {
   errorGroupsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: {
-      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"',
     },
   },
   // logs/by-request errors
@@ -104,7 +104,7 @@ export const dashboardExamples = {
   slowLogsValErrs: {
     idErrors: { serviceId: "Invalid UUID" },
     invalidData: {
-      period: 'Invalid option: expected one of "1h"|"24h"|"7d"|"30d"',
+      period: 'Invalid option: expected one of "1h"|"24h"|"7d"',
       level: 'Invalid option: expected one of "info"|"warn"|"error"|"debug"',
       cursor: "Invalid pagination cursor",
     },

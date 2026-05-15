@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type Period = "1h" | "24h" | "7d" | "30d";
+type Period = "1h" | "24h" | "7d";
 
 interface PeriodStore {
   period: Period;

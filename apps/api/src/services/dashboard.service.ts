@@ -83,7 +83,7 @@ export type CountCacheKeyParams = {
 };
 
 /**
- * Converts a period string (1h, 24h, 7d, 30d) to a Date representing the
+ * Converts a period string (1h, 24h, 7d) to a Date representing the
  * start of that period.
  */
 export const periodToDate = (period: Period): Date => {
@@ -95,8 +95,6 @@ export const periodToDate = (period: Period): Date => {
       return new Date(now.getTime() - 24 * 60 * 60 * 1000);
     case "7d":
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case "30d":
-      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
 };
 
@@ -112,7 +110,6 @@ export const PERIOD_TO_DB_INTERVAL: Record<Period, string> = {
   "1h": "1 hour",
   "24h": "24 hours",
   "7d": "7 days",
-  "30d": "30 days",
 };
 
 /**
@@ -126,7 +123,6 @@ export const getPrevPeriod = (period: Period): { from: Date; to: Date } => {
     "1h": 60 * 60 * 1000,
     "24h": 24 * 60 * 60 * 1000,
     "7d": 7 * 24 * 60 * 60 * 1000,
-    "30d": 30 * 24 * 60 * 60 * 1000,
   }[period];
 
   return {
@@ -152,7 +148,7 @@ export const makeCountCacheKey = (params: CountCacheKeyParams): string => {
  * Determines the best granularity based on the period.
  * - 1h → minute (60 data points)
  * - 24h → hour (24 data points)
- * - 7d/30d → day (7-30 data points)
+ * - 7d → hour (168 data points)
  */
 export const getDefaultGranularity = (period: Period): Granularity => {
   switch (period) {
@@ -161,8 +157,6 @@ export const getDefaultGranularity = (period: Period): Granularity => {
     case "24h":
     case "7d":
       return "hour";
-    case "30d":
-      return "day";
   }
 };
 
