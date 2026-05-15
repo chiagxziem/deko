@@ -173,9 +173,13 @@ export class DashboardRepository implements IDashboardRepository {
     const bucketInterval =
       bucketSize === "minute"
         ? "1 minute"
-        : bucketSize === "hour"
-          ? "1 hour"
-          : "1 day";
+        : bucketSize === "15minute"
+          ? "15 minutes"
+          : bucketSize === "hour"
+            ? "1 hour"
+            : bucketSize === "2hour"
+              ? "2 hours"
+              : "1 day";
 
     let startTime: Date;
     let endTime: Date;
