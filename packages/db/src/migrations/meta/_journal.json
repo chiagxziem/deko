@@ -36,6 +36,13 @@
       "when": 1769617219524,
       "tag": "0004_swift_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778859010169,
+      "tag": "0005_reduce_retention",
+      "breakpoints": true
     }
   ]
 }
