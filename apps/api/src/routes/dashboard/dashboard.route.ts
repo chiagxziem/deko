@@ -49,7 +49,7 @@ import {
   getTopEndpointsDoc,
 } from "./dashboard.docs";
 
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 90_000;
 
 const timeoutException = () =>
   new HTTPException(HttpStatusCodes.GATEWAY_TIMEOUT, {

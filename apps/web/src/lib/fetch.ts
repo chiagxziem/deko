@@ -6,7 +6,7 @@ import { errorResSchema } from "@/lib/schemas";
 import { env } from "./env";
 
 const baseURL = `${env.API_URL}/api`;
-const FETCH_TIMEOUT_MS = 30_000;
+const FETCH_TIMEOUT_MS = 90_000;
 
 export const $fetch = createFetch({
   baseURL,
